@@ -18,11 +18,12 @@
     position: relative;
   }
 
+
 #bestImage {
   width: 100vw;
   height: 100vh;
   object-fit: cover;
-  position: absolute;
+  position: fixed;
   top: 0;
   left: 0;
   z-index: 1;
@@ -180,6 +181,8 @@
 
       const best = images.reduce((a, b) => (a.score > b.score ? a : b));
       bestImage.src = best.image;
+      console.log("أفضل صورة تم اختيارها:", best.image);
+
       // عرض الصور المصغرة
 const thumbs = document.getElementById("thumbnails");
 thumbs.innerHTML = '';
