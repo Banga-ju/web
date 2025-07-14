@@ -9,17 +9,62 @@
     video, canvas, img { max-width: 100%; border: 1px solid #ccc; margin-top: 10px; }
     #loading { color: green; }
     #startBtn { margin-top: 10px; }
+
+    <style>
+  body {
+    font-family: Arial;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    position: relative;
+  }
+
+  #bestImage {
+    width: 100vw;
+    height: 100vh;
+    object-fit: cover;
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: 1;
+  }
+
+  #video {
+    position: absolute;
+    bottom: 10px;
+    right: 10px;
+    width: 120px;
+    height: 90px;
+    z-index: 2;
+    border: 2px solid #fff;
+    box-shadow: 0 0 10px rgba(0,0,0,0.5);
+  }
+
+  #startBtn, #loading, #status {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    z-index: 3;
+    background: rgba(255,255,255,0.8);
+    padding: 5px 10px;
+    border-radius: 5px;
+  }
+
+  #canvas {
+    display: none;
+  }
+</style>
+
+  
   </style>
 </head>
 <body>
-  <h2>التقاط أفضل صورة وجه تلقائيًا</h2>
+ <img id="bestImage" alt="سيتم عرض الصورة هنا">
+  <video id="video" autoplay muted playsinline></video>
   <p id="loading">جارٍ تحميل النماذج...</p>
   <button id="startBtn">تشغيل الكاميرا</button>
-  <video id="video" width="240" height="180" autoplay muted playsinline></video>
   <p id="status"></p>
-  <canvas id="canvas" style="display:none;"></canvas>
-  <h3>أفضل صورة تم اكتشافها:</h3>
-  <img id="bestImage" alt="سيتم عرض الصورة هنا">
+  <canvas id="canvas"></canvas>
 
   <script>
     const video = document.getElementById('video');
