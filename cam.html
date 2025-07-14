@@ -2,18 +2,20 @@
 <html lang="ar">
 <head>
   <meta charset="UTF-8">
-  <title>التقاط أفضل صورة للوجه</title>
+  <title>التقاط أفضل صورة وجه تلقائيًا</title>
   <script defer src="https://cdn.jsdelivr.net/npm/face-api.js"></script>
   <style>
     body { font-family: Arial; text-align: center; padding: 20px; }
     video, canvas, img { max-width: 100%; border: 1px solid #ccc; margin-top: 10px; }
     #loading { color: green; }
+    #startBtn { margin-top: 10px; }
   </style>
 </head>
 <body>
-  <h2>التقاط أفضل صورة وجه تلقائيًا</h2>
+  <h2>التقاط أفضل صورة وجه </h2>
   <p id="loading">جارٍ تحميل النماذج...</p>
-  <video id="video" width="300" height="225" autoplay muted></video>
+  <button id="startBtn">تشغيل الكاميرا</button>
+  <video id="video" width="300" height="225" autoplay muted playsinline></video>
   <p id="status"></p>
   <canvas id="canvas" style="display:none;"></canvas>
   <h3>أفضل صورة تم اكتشافها:</h3>
@@ -24,6 +26,7 @@
     const canvas = document.getElementById('canvas');
     const bestImage = document.getElementById('bestImage');
     const statusText = document.getElementById('status');
+    const startBtn = document.getElementById('startBtn');
 
     async function loadModelWithProgress(url, onProgress) {
       const response = await fetch(url);
@@ -55,22 +58,22 @@
       });
 
       await faceapi.nets.tinyFaceDetector.loadFromUri('models');
+      document.getElementById('loading').textContent = 'النموذج جاهز، يمكنك تشغيل الكاميرا.';
+      startBtn.disabled = false;
     }
 
-    // تشغيل الكاميرا
     async function startCamera() {
       try {
         const stream = await navigator.mediaDevices.getUserMedia({ video: true });
         video.srcObject = stream;
         document.getElementById("loading").style.display = 'none';
         statusText.textContent = "جاري البحث عن وجه...";
-        watchForFace(); // نبدأ المراقبة بعد تشغيل الكاميرا
+        watchForFace();
       } catch (err) {
-        alert("لا يمكن الوصول إلى الكاميرا");
+        alert("تعذر تشغيل الكاميرا: " + err.message);
       }
     }
 
-    // المراقبة المستمرة لاكتشاف الوجه
     async function watchForFace() {
       const options = new faceapi.TinyFaceDetectorOptions();
       let consecutiveDetections = 0;
@@ -93,7 +96,6 @@
       }, 500);
     }
 
-    // التقاط 10 صور واختيار الأفضل
     async function captureBestFace() {
       const images = [];
       const options = new faceapi.TinyFaceDetectorOptions();
@@ -120,8 +122,14 @@
       statusText.textContent = "تم اختيار أفضل صورة!";
     }
 
-    // تحميل النموذج ثم تشغيل الكاميرا
-    loadTinyFaceModel().then(startCamera);
+    // زر التشغيل اليدوي
+    startBtn.onclick = () => {
+      startBtn.disabled = true;
+      startCamera();
+    };
+
+    // ابدأ تحميل النموذج أول ما تفتح الصفحة
+    loadTinyFaceModel();
   </script>
 </body>
 </html>
