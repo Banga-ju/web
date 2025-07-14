@@ -2,133 +2,142 @@
 <html lang="ar">
 <head>
   <meta charset="UTF-8">
-  <title>أفضل وجه</title>
-  <script src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js" onload="loadTinyFaceModel()"></script>
+  <title>أفضل لقطة وجه تلقائيًا</title>
+  <script defer src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
   <style>
-    body {
-      margin: 0;
-      padding: 0;
-      background-color: black;
-      color: white;
-      font-family: Arial;
-      text-align: center;
-    }
-    #bestImage {
-      width: 100vw;
-      height: 100vh;
-      object-fit: cover;
-    }
-    #title {
-      position: absolute;
-      top: 30px;
-      width: 100%;
-      font-size: 30px;
-      font-weight: bold;
-      text-shadow: 0 0 10px black;
-    }
-    #startBtn {
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      font-size: 20px;
-      padding: 10px 20px;
-      z-index: 10;
-    }
-    video {
-      position: absolute;
-      bottom: 10px;
-      right: 10px;
-      width: 120px;
-      height: 90px;
-      border: 2px solid white;
-      z-index: 5;
-    }
-    canvas {
-      display: none;
-    }
+    body { font-family: Arial; text-align: center; padding: 20px; }
+    video, canvas, img { max-width: 100%; border: 1px solid #ccc; margin-top: 10px; }
+    #loading { color: green; }
+    #startBtn { margin-top: 10px; }
   </style>
 </head>
 <body>
-  <div id="title">اضغط لتشغيل الكاميرا</div>
+  <h2>التقاط أفضل صورة وجه تلقائيًا</h2>
+  <p id="loading">جارٍ تحميل النماذج...</p>
   <button id="startBtn">تشغيل الكاميرا</button>
-  <video id="video" autoplay muted playsinline></video>
-  <canvas id="canvas"></canvas>
+  <video id="video" width="240" height="180" autoplay muted playsinline></video>
+  <p id="status"></p>
+  <canvas id="canvas" style="display:none;"></canvas>
+  <h3>أفضل صورة تم اكتشافها:</h3>
   <img id="bestImage" alt="سيتم عرض الصورة هنا">
 
   <script>
     const video = document.getElementById('video');
     const canvas = document.getElementById('canvas');
     const bestImage = document.getElementById('bestImage');
-    const title = document.getElementById('title');
+    const statusText = document.getElementById('status');
     const startBtn = document.getElementById('startBtn');
 
-    async function loadTinyFaceModel() {
-      await faceapi.nets.tinyFaceDetector.loadFromUri('models');
-      title.textContent = 'اضغط لتشغيل الكاميرا';
-      startBtn.disabled = false;
+    async function loadModelWithProgress(url, onProgress) {
+      const response = await fetch(url);
+      const reader = response.body.getReader();
+      const contentLength = +response.headers.get('Content-Length');
+      let receivedLength = 0;
+      let chunks = [];
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        chunks.push(value);
+        receivedLength += value.length;
+        const percent = Math.floor((receivedLength / contentLength) * 100);
+        onProgress(percent);
+      }
+
+      const blob = new Blob(chunks);
+      const arrayBuffer = await blob.arrayBuffer();
+      return arrayBuffer;
     }
 
-    startBtn.onclick = () => {
-      startBtn.style.display = 'none';
-      startCamera();
-    };
+    async function loadTinyFaceModel() {
+      const MODEL_URL = 'models/tiny_face_detector_model-shard1';
+      document.getElementById('loading').textContent = 'تحميل النموذج 0%';
+
+      await loadModelWithProgress(MODEL_URL, (percent) => {
+        document.getElementById('loading').textContent = `تحميل النموذج ${percent}%`;
+      });
+
+      await faceapi.nets.tinyFaceDetector.loadFromUri('models');
+      document.getElementById('loading').textContent = 'النموذج جاهز، شغل الكاميرا.';
+      startBtn.disabled = false;
+    }
 
     async function startCamera() {
       try {
         const stream = await navigator.mediaDevices.getUserMedia({ video: { width: 240, height: 180 } });
         video.srcObject = stream;
-        title.textContent = "جاري البحث عن وجه...";
+        document.getElementById("loading").style.display = 'none';
+        statusText.textContent = "جاري البحث عن وجه...";
         watchForFace();
       } catch (err) {
-        title.textContent = "تعذر تشغيل الكاميرا";
+        alert("تعذر تشغيل الكاميرا: " + err.message);
       }
     }
 
     async function watchForFace() {
       const options = new faceapi.TinyFaceDetectorOptions();
       let consecutiveDetections = 0;
+      let attempts = 0;
+      const maxAttempts = 20;
+
       const interval = setInterval(async () => {
         const detection = await faceapi.detectSingleFace(video, options);
+        attempts++;
+
         if (detection) {
+          console.log("كشف وجه - الثقة:", detection.score);
           consecutiveDetections++;
+          statusText.textContent = `تم اكتشاف وجه (${consecutiveDetections}) - الثقة: ${Math.round(detection.score * 100)}%`;
         } else {
+          console.log("ما فيه وجه");
           consecutiveDetections = 0;
+          statusText.textContent = "جاري البحث عن وجه...";
         }
 
-        if (consecutiveDetections >= 2) {
+        if (consecutiveDetections >= 3) {
           clearInterval(interval);
+          statusText.textContent = "تم تثبيت الوجه، جاري الالتقاط...";
           captureBestFace();
+        } else if (attempts >= maxAttempts) {
+          clearInterval(interval);
+          statusText.textContent = "ما تم اكتشاف أي وجه، حاول تقرّب أكثر.";
         }
-      }, 200);
+      }, 500);
     }
 
     async function captureBestFace() {
       const images = [];
       const options = new faceapi.TinyFaceDetectorOptions();
-      title.textContent = "يتم اختيار أفضل صورة...";
 
       for (let i = 0; i < 10; i++) {
-        await new Promise(resolve => setTimeout(resolve, 300)); // أسرع شوي
+        await new Promise(resolve => setTimeout(resolve, 200));
         canvas.width = video.videoWidth;
         canvas.height = video.videoHeight;
         canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
         const dataURL = canvas.toDataURL('image/jpeg');
         const detection = await faceapi.detectSingleFace(canvas, options);
         if (detection) {
+          console.log(`صورة ${i + 1} - score: ${detection.score}`);
           images.push({ score: detection.score, image: dataURL });
         }
       }
 
       if (images.length === 0) {
-        title.textContent = "ما تم التقاط أي صورة بوجه واضح.";
+        statusText.textContent = "ما تم التقاط أي صورة بوجه واضح.";
         return;
       }
 
       const best = images.reduce((a, b) => (a.score > b.score ? a : b));
       bestImage.src = best.image;
-      title.textContent = "أفضل شخص هووو!";
+      statusText.textContent = "تم اختيار أفضل صورة!";
     }
+
+    startBtn.onclick = () => {
+      startBtn.disabled = true;
+      startCamera();
+    };
+
+    loadTinyFaceModel();
   </script>
 </body>
 </html>
