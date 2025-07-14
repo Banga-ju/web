@@ -28,10 +28,42 @@
     const statusText = document.getElementById('status');
     const startBtn = document.getElementById('startBtn');
 
-    // تحميل النماذج
-    Promise.all([
-faceapi.nets.tinyFaceDetector.loadFromUri('models')
-    ]).then(startCamera);
+    // دالة لتحميل ملف مع عرض نسبة التحميل
+    async function loadModelWithProgress(url, onProgress) {
+      const response = await fetch(url);
+      const reader = response.body.getReader();
+      const contentLength = +response.headers.get('Content-Length');
+      let receivedLength = 0;
+      let chunks = [];
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        chunks.push(value);
+        receivedLength += value.length;
+        const percent = Math.floor((receivedLength / contentLength) * 100);
+        onProgress(percent);
+      }
+
+      const blob = new Blob(chunks);
+      const arrayBuffer = await blob.arrayBuffer();
+      return arrayBuffer;
+    }
+
+    // تحميل نموذج face-api مع النسبة
+    async function loadTinyFaceModel() {
+      const MODEL_URL = 'models/tiny_face_detector_model-shard1';
+      document.getElementById('loading').textContent = 'تحميل النموذج 0%';
+
+      await loadModelWithProgress(MODEL_URL, (percent) => {
+        document.getElementById('loading').textContent = `تحميل النموذج ${percent}%`;
+      });
+
+      await faceapi.nets.tinyFaceDetector.loadFromUri('models');
+    }
+
+    // تحميل النموذج ثم تشغيل الكاميرا
+    loadTinyFaceModel().then(startCamera);
 
     async function startCamera() {
       document.getElementById("loading").textContent = "جاري تشغيل الكاميرا...";
@@ -58,7 +90,7 @@ faceapi.nets.tinyFaceDetector.loadFromUri('models')
       const images = [];
 
       for (let i = 0; i < 10; i++) {
-        await new Promise(resolve => setTimeout(resolve, 200)); // انتظار بسيط بين اللقطات
+        await new Promise(resolve => setTimeout(resolve, 200));
         canvas.width = video.videoWidth;
         canvas.height = video.videoHeight;
         canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
