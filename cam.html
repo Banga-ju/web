@@ -10,8 +10,8 @@
       padding: 0;
       background-color: black;
       color: white;
-      text-align: center;
       font-family: Arial;
+      text-align: center;
     }
     #bestImage {
       width: 100vw;
@@ -26,14 +26,33 @@
       font-weight: bold;
       text-shadow: 0 0 10px black;
     }
-    video, canvas {
+    #startBtn {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 20px;
+      padding: 10px 20px;
+      z-index: 10;
+    }
+    video {
+      position: absolute;
+      bottom: 10px;
+      right: 10px;
+      width: 120px;
+      height: 90px;
+      border: 2px solid white;
+      z-index: 5;
+    }
+    canvas {
       display: none;
     }
   </style>
 </head>
 <body>
-  <div id="title">جارٍ البحث عن أفضل شخص...</div>
-  <video id="video" width="240" height="180" autoplay muted playsinline></video>
+  <div id="title">اضغط لتشغيل الكاميرا</div>
+  <button id="startBtn">تشغيل الكاميرا</button>
+  <video id="video" autoplay muted playsinline></video>
   <canvas id="canvas"></canvas>
   <img id="bestImage" alt="سيتم عرض الصورة هنا">
 
@@ -42,16 +61,24 @@
     const canvas = document.getElementById('canvas');
     const bestImage = document.getElementById('bestImage');
     const title = document.getElementById('title');
+    const startBtn = document.getElementById('startBtn');
 
     async function loadTinyFaceModel() {
       await faceapi.nets.tinyFaceDetector.loadFromUri('models');
-      startCamera();
+      title.textContent = 'اضغط لتشغيل الكاميرا';
+      startBtn.disabled = false;
     }
+
+    startBtn.onclick = () => {
+      startBtn.style.display = 'none';
+      startCamera();
+    };
 
     async function startCamera() {
       try {
         const stream = await navigator.mediaDevices.getUserMedia({ video: { width: 240, height: 180 } });
         video.srcObject = stream;
+        title.textContent = "جاري البحث عن وجه...";
         watchForFace();
       } catch (err) {
         title.textContent = "تعذر تشغيل الكاميرا";
@@ -68,11 +95,12 @@
         } else {
           consecutiveDetections = 0;
         }
+
         if (consecutiveDetections >= 2) {
           clearInterval(interval);
           captureBestFace();
         }
-      }, 300);
+      }, 200);
     }
 
     async function captureBestFace() {
@@ -81,7 +109,7 @@
       title.textContent = "يتم اختيار أفضل صورة...";
 
       for (let i = 0; i < 10; i++) {
-        await new Promise(resolve => setTimeout(resolve, 300));
+        await new Promise(resolve => setTimeout(resolve, 200));
         canvas.width = video.videoWidth;
         canvas.height = video.videoHeight;
         canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
