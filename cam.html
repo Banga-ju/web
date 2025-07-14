@@ -59,7 +59,14 @@
   </style>
 </head>
 <body>
- <img id="bestImage" alt="سيتم عرض الصورة هنا">
+<div style="position: relative; display: inline-block;">
+  <p style="position: absolute; top: 10px; left: 10px; background: rgba(0,0,0,0.6); color: white; padding: 5px 10px; border-radius: 5px; z-index: 2;">
+    هذه هي أفضل صورة تم اختيارها تلقائيًا
+  </p>
+  <img id="bestImage" alt="سيتم عرض الصورة هنا" style="max-width: 100%;">
+</div>
+  <div id="thumbnails" style="position:absolute; bottom:110px; left:10px; right:10px; display:flex; gap:5px; overflow-x:auto; z-index:3;"></div>
+
   <video id="video" autoplay muted playsinline></video>
   <p id="loading">جارٍ تحميل النماذج...</p>
   <button id="startBtn">تشغيل الكاميرا</button>
@@ -174,6 +181,20 @@
 
       const best = images.reduce((a, b) => (a.score > b.score ? a : b));
       bestImage.src = best.image;
+      // عرض الصور المصغرة
+const thumbs = document.getElementById("thumbnails");
+thumbs.innerHTML = '';
+images.forEach(({ image }, i) => {
+  const img = document.createElement("img");
+  img.src = image;
+  img.style.width = "80px";
+  img.style.height = "60px";
+  img.style.objectFit = "cover";
+  img.style.border = "2px solid white";
+  img.title = `صورة ${i + 1}`;
+  thumbs.appendChild(img);
+});
+
       statusText.textContent = "تم اختيار أفضل صورة!";
     }
 
