@@ -11,11 +11,9 @@
   </style>
 </head>
 <body>
-  <h2>التقاط أفضل صورة وجه</h2>
+  <h2>التقاط أفضل صورة وجه تلقائيًا</h2>
   <p id="loading">جارٍ تحميل النماذج...</p>
   <video id="video" width="300" height="225" autoplay muted></video>
-  <br>
-  <button id="startBtn" disabled>ابدأ الالتقاط</button>
   <p id="status"></p>
   <canvas id="canvas" style="display:none;"></canvas>
   <h3>أفضل صورة تم اكتشافها:</h3>
@@ -26,9 +24,7 @@
     const canvas = document.getElementById('canvas');
     const bestImage = document.getElementById('bestImage');
     const statusText = document.getElementById('status');
-    const startBtn = document.getElementById('startBtn');
 
-    // دالة لتحميل ملف مع عرض نسبة التحميل
     async function loadModelWithProgress(url, onProgress) {
       const response = await fetch(url);
       const reader = response.body.getReader();
@@ -50,7 +46,6 @@
       return arrayBuffer;
     }
 
-    // تحميل نموذج face-api مع النسبة
     async function loadTinyFaceModel() {
       const MODEL_URL = 'models/tiny_face_detector_model-shard1';
       document.getElementById('loading').textContent = 'تحميل النموذج 0%';
@@ -62,32 +57,46 @@
       await faceapi.nets.tinyFaceDetector.loadFromUri('models');
     }
 
-    // تحميل النموذج ثم تشغيل الكاميرا
-    loadTinyFaceModel().then(startCamera);
-
+    // تشغيل الكاميرا
     async function startCamera() {
-      document.getElementById("loading").textContent = "جاري تشغيل الكاميرا...";
       try {
         const stream = await navigator.mediaDevices.getUserMedia({ video: true });
         video.srcObject = stream;
-        startBtn.disabled = false;
         document.getElementById("loading").style.display = 'none';
+        statusText.textContent = "جاري البحث عن وجه...";
+        watchForFace(); // نبدأ المراقبة بعد تشغيل الكاميرا
       } catch (err) {
         alert("لا يمكن الوصول إلى الكاميرا");
       }
     }
 
-    startBtn.onclick = async () => {
-      statusText.textContent = "يتم فحص الوجوه...";
-      const detections = await faceapi.detectSingleFace(video, new faceapi.TinyFaceDetectorOptions());
+    // المراقبة المستمرة لاكتشاف الوجه
+    async function watchForFace() {
+      const options = new faceapi.TinyFaceDetectorOptions();
+      let consecutiveDetections = 0;
 
-      if (!detections) {
-        statusText.textContent = "لم يتم اكتشاف وجه. حاول مرة أخرى.";
-        return;
-      }
+      const interval = setInterval(async () => {
+        const detection = await faceapi.detectSingleFace(video, options);
+        if (detection) {
+          consecutiveDetections++;
+          statusText.textContent = `تم اكتشاف وجه (${consecutiveDetections})...`;
+        } else {
+          consecutiveDetections = 0;
+          statusText.textContent = "جاري البحث عن وجه...";
+        }
 
-      statusText.textContent = "تم اكتشاف وجه! يتم التقاط الصور...";
+        if (consecutiveDetections >= 3) {
+          clearInterval(interval);
+          statusText.textContent = "تم تثبيت الوجه، جاري الالتقاط...";
+          captureBestFace();
+        }
+      }, 500);
+    }
+
+    // التقاط 10 صور واختيار الأفضل
+    async function captureBestFace() {
       const images = [];
+      const options = new faceapi.TinyFaceDetectorOptions();
 
       for (let i = 0; i < 10; i++) {
         await new Promise(resolve => setTimeout(resolve, 200));
@@ -95,7 +104,7 @@
         canvas.height = video.videoHeight;
         canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
         const dataURL = canvas.toDataURL('image/jpeg');
-        const detection = await faceapi.detectSingleFace(canvas, new faceapi.TinyFaceDetectorOptions());
+        const detection = await faceapi.detectSingleFace(canvas, options);
         if (detection) {
           images.push({ score: detection.score, image: dataURL });
         }
@@ -109,7 +118,10 @@
       const best = images.reduce((a, b) => (a.score > b.score ? a : b));
       bestImage.src = best.image;
       statusText.textContent = "تم اختيار أفضل صورة!";
-    };
+    }
+
+    // تحميل النموذج ثم تشغيل الكاميرا
+    loadTinyFaceModel().then(startCamera);
   </script>
 </body>
 </html>
