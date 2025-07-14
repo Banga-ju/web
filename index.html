@@ -81,6 +81,12 @@
       color: #999;
       font-size: 15px;
     }
+    button {
+  font-family: 'Cairo', sans-serif;
+}
+
+
+
   </style>
 </head>
 <body>
@@ -137,16 +143,20 @@
     <label>رابط النشر في إنستغرام</label>
     <input type="url" id="instaPost" />
 
-    <label>رابط تقييم قوقل ماب</label>
+    <label>رابط تقييم قوقل ماب<span style="color:red">*</span></label>
     <input type="url" id="googleReview" />
 
-    <button onclick="goBackToStep1()">العودة للتعديل</button>
-    <button onclick="submitForm()">تأكيد الإرسال</button>
+    <div style="display: flex; gap: 10px;margin-bottom: 40px;    ">
+        <button onclick="goBackToStep1()" style="background-color: #e0e0e0; color: #000; padding: 10px 20px; font-size: 16px; border: none; border-radius: 8px; cursor: pointer; flex: 1;">العودة للتعديل</button>
+        <button onclick="submitForm()" style="background-color: #2e9d51; color: #fff; padding: 10px 20px; font-size: 16px; border: none; border-radius: 8px; cursor: pointer; flex: 1;">تأكيد الإرسال</button>
+      </div>
+
+
     <div id="submitLoadingMsg" class="hidden">جاري الإرسال...</div>
   </div>
 
   <div class="container hidden" id="thanks-container">
-    <h3 style="color:#2d9958">شكرًا لتعاونك!</h3>
+    <h3 style="color:#ffb20c">شكرًا لتعاونك!</h3>
     <p>نلتقي في تعاون لاحق بإذن الله.</p>
   </div>
 
@@ -251,12 +261,18 @@ window.goBackToStep1 = function () {
 };
 
 window.submitForm = async function () {
-  document.getElementById("submitLoadingMsg").classList.remove("hidden");
-
   const tiktokPost = document.getElementById("tiktokPost").value.trim();
   const snapPost = document.getElementById("snapPost").value.trim();
   const instaPost = document.getElementById("instaPost").value.trim();
   const googleReview = document.getElementById("googleReview").value.trim();
+
+  // التحقق من الحقول الإلزامية
+  if (!tiktokPost || !googleReview) {
+    alert("يجب تعبئة رابط النشر في تيك توك ورابط التقييم في قوقل ماب.");
+    return;
+  }
+
+  document.getElementById("submitLoadingMsg").classList.remove("hidden");
 
   const updateData = {
     tiktokPost,
@@ -274,6 +290,7 @@ window.submitForm = async function () {
   document.getElementById("step2").classList.add("hidden");
   document.getElementById("thanks-container").classList.remove("hidden");
 };
+
 // عند فتح الصفحة: استرجع البيانات وافتح الخطوة الثانية إذا كانت محفوظة
 const saved = JSON.parse(localStorage.getItem("marketerData") || "{}");
 if (saved.displayName && saved.username && saved.tiktokAccount) {
