@@ -130,7 +130,10 @@
       title.textContent = "أفضل شخص هووو!";
     }
 
-    loadTinyFaceModel();
+loadTinyFaceModel().catch(err => {
+  title.textContent = "فشل تحميل نموذج الوجه";
+  console.error("Model Load Error:", err);
+});
   </script>
 </body>
 </html>
