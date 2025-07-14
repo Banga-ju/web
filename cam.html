@@ -2,7 +2,7 @@
 <html lang="ar">
 <head>
   <meta charset="UTF-8">
-  <title>التقاط أفضل صورة وجه تلقائيًا</title>
+  <title>أفضل لقطة وجه تلقائيًا</title>
   <script defer src="https://cdn.jsdelivr.net/npm/face-api.js"></script>
   <style>
     body { font-family: Arial; text-align: center; padding: 20px; }
@@ -12,10 +12,10 @@
   </style>
 </head>
 <body>
-  <h2>التقاط أفضل صورة وجه </h2>
+  <h2>التقاط أفضل صورة وجه تلقائيًا</h2>
   <p id="loading">جارٍ تحميل النماذج...</p>
   <button id="startBtn">تشغيل الكاميرا</button>
-  <video id="video" width="300" height="225" autoplay muted playsinline></video>
+  <video id="video" width="240" height="180" autoplay muted playsinline></video>
   <p id="status"></p>
   <canvas id="canvas" style="display:none;"></canvas>
   <h3>أفضل صورة تم اكتشافها:</h3>
@@ -58,13 +58,13 @@
       });
 
       await faceapi.nets.tinyFaceDetector.loadFromUri('models');
-      document.getElementById('loading').textContent = 'النموذج جاهز، يمكنك تشغيل الكاميرا.';
+      document.getElementById('loading').textContent = 'النموذج جاهز، شغل الكاميرا.';
       startBtn.disabled = false;
     }
 
     async function startCamera() {
       try {
-        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+        const stream = await navigator.mediaDevices.getUserMedia({ video: { width: 240, height: 180 } });
         video.srcObject = stream;
         document.getElementById("loading").style.display = 'none';
         statusText.textContent = "جاري البحث عن وجه...";
@@ -77,13 +77,19 @@
     async function watchForFace() {
       const options = new faceapi.TinyFaceDetectorOptions();
       let consecutiveDetections = 0;
+      let attempts = 0;
+      const maxAttempts = 20;
 
       const interval = setInterval(async () => {
         const detection = await faceapi.detectSingleFace(video, options);
+        attempts++;
+
         if (detection) {
+          console.log("كشف وجه - الثقة:", detection.score);
           consecutiveDetections++;
-          statusText.textContent = `تم اكتشاف وجه (${consecutiveDetections})...`;
+          statusText.textContent = `تم اكتشاف وجه (${consecutiveDetections}) - الثقة: ${Math.round(detection.score * 100)}%`;
         } else {
+          console.log("ما فيه وجه");
           consecutiveDetections = 0;
           statusText.textContent = "جاري البحث عن وجه...";
         }
@@ -92,6 +98,9 @@
           clearInterval(interval);
           statusText.textContent = "تم تثبيت الوجه، جاري الالتقاط...";
           captureBestFace();
+        } else if (attempts >= maxAttempts) {
+          clearInterval(interval);
+          statusText.textContent = "ما تم اكتشاف أي وجه، حاول تقرّب أكثر.";
         }
       }, 500);
     }
@@ -108,12 +117,13 @@
         const dataURL = canvas.toDataURL('image/jpeg');
         const detection = await faceapi.detectSingleFace(canvas, options);
         if (detection) {
+          console.log(`صورة ${i + 1} - score: ${detection.score}`);
           images.push({ score: detection.score, image: dataURL });
         }
       }
 
       if (images.length === 0) {
-        statusText.textContent = "لم يتم التقاط أي صورة بوجه واضح.";
+        statusText.textContent = "ما تم التقاط أي صورة بوجه واضح.";
         return;
       }
 
@@ -122,13 +132,11 @@
       statusText.textContent = "تم اختيار أفضل صورة!";
     }
 
-    // زر التشغيل اليدوي
     startBtn.onclick = () => {
       startBtn.disabled = true;
       startCamera();
     };
 
-    // ابدأ تحميل النموذج أول ما تفتح الصفحة
     loadTinyFaceModel();
   </script>
 </body>
