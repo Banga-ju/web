@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+  <meta charset="UTF-8">
+  <title>التقاط أفضل صورة وجه</title>
+  <script defer src="https://cdn.jsdelivr.net/npm/face-api.js"></script>
+  <style>
+    body { font-family: Arial; text-align: center; padding: 20px; }
+    video, canvas, img { max-width: 100%; border: 1px solid #ccc; margin-top: 10px; }
+    #loading { color: green; }
+  </style>
+</head>
+<body>
+  <h2>التقاط أفضل صورة للوجه</h2>
+  <p id="loading">جارٍ تحميل النماذج...</p>
+  <video id="video" width="300" height="225" autoplay muted></video>
+  <br>
+  <button id="startBtn" disabled>ابدأ الالتقاط</button>
+  <p id="status"></p>
+  <canvas id="canvas" style="display:none;"></canvas>
+  <h3>أفضل صورة تم اكتشافها:</h3>
+  <img id="bestImage" alt="سيتم عرض الصورة هنا">
+
+  <script>
+    const video = document.getElementById('video');
+    const canvas = document.getElementById('canvas');
+    const bestImage = document.getElementById('bestImage');
+    const statusText = document.getElementById('status');
+    const startBtn = document.getElementById('startBtn');
+
+    // تحميل النماذج
+    Promise.all([
+      faceapi.nets.tinyFaceDetector.loadFromUri('https://cdn.jsdelivr.net/npm/face-api.js/models'),
+    ]).then(startCamera);
+
+    async function startCamera() {
+      document.getElementById("loading").textContent = "جاري تشغيل الكاميرا...";
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+        video.srcObject = stream;
+        startBtn.disabled = false;
+        document.getElementById("loading").style.display = 'none';
+      } catch (err) {
+        alert("لا يمكن الوصول إلى الكاميرا");
+      }
+    }
+
+    startBtn.onclick = async () => {
+      statusText.textContent = "يتم فحص الوجوه...";
+      const detections = await faceapi.detectSingleFace(video, new faceapi.TinyFaceDetectorOptions());
+
+      if (!detections) {
+        statusText.textContent = "لم يتم اكتشاف وجه. حاول مرة أخرى.";
+        return;
+      }
+
+      statusText.textContent = "تم اكتشاف وجه! يتم التقاط الصور...";
+      const images = [];
+
+      for (let i = 0; i < 10; i++) {
+        await new Promise(resolve => setTimeout(resolve, 200)); // انتظار بسيط بين اللقطات
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
+        const dataURL = canvas.toDataURL('image/jpeg');
+        const detection = await faceapi.detectSingleFace(canvas, new faceapi.TinyFaceDetectorOptions());
+        if (detection) {
+          images.push({ score: detection.score, image: dataURL });
+        }
+      }
+
+      if (images.length === 0) {
+        statusText.textContent = "لم يتم التقاط أي صورة بوجه واضح.";
+        return;
+      }
+
+      const best = images.reduce((a, b) => (a.score > b.score ? a : b));
+      bestImage.src = best.image;
+      statusText.textContent = "تم اختيار أفضل صورة!";
+    };
+  </script>
+</body>
+</html>
