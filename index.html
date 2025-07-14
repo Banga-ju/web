@@ -1,12 +1,10 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>تسجيل حضور المعلنين - عصيرات بنقا</title>
-  <script src="https://www.gstatic.com/firebasejs/10.11.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore-compat.js"></script>
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cairo&display=swap">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cairo&display=swap" />
   <style>
     body {
       font-family: 'Cairo', sans-serif;
@@ -17,27 +15,26 @@
       text-align: center;
     }
     .header {
-  position: relative;
-  background: url('banner.jpg') no-repeat center center;
-  background-size: cover;
-  padding: 30px 20px 10px 20px;
-}
-.header::before {
-  content: '';
-  position: absolute;
-  top: 0; right: 0; bottom: 0; left: 0;
-  background-color: rgba(0, 0, 0, 0.7); /* تعتيم 70% */
-  z-index: 1;
-  border-radius: 0 0 15px 15px;
-}
-.header img {
-  max-width: 150px;
-  position: relative;
-  z-index: 2;
-  display: block;
-  margin: auto;
-}
-
+      position: relative;
+      background: url('banner.jpg') no-repeat center center;
+      background-size: cover;
+      padding: 30px 20px 10px 20px;
+    }
+    .header::before {
+      content: '';
+      position: absolute;
+      top: 0; right: 0; bottom: 0; left: 0;
+      background-color: rgba(0, 0, 0, 0.7);
+      z-index: 1;
+      border-radius: 0 0 15px 15px;
+    }
+    .header img {
+      max-width: 150px;
+      position: relative;
+      z-index: 2;
+      display: block;
+      margin: auto;
+    }
     .container {
       max-width: 480px;
       margin: auto;
@@ -79,151 +76,214 @@
     }
     .hidden { display: none; }
     .terms { margin-top: 15px; text-align: right; }
+    #loadingMsg, #submitLoadingMsg {
+      margin-top: 15px;
+      color: #999;
+      font-size: 15px;
+    }
   </style>
 </head>
 <body>
-<div class="header">
-  <img src="logo.png" alt="شعار بنقا">
-</div>
-
-<div class="container" id="step1">
-  <h2 style="color:#e89c00">تسجيل حضور المعلنين</h2>
-  <label>اسم الشهرة أو الاسم المستعار</label>
-  <input type="text" id="displayName">
-
-  <label>اسم المستخدم في تيك توك</label>
-  <input type="text" id="username">
-
-  <label>رابط حساب تيك توك</label>
-  <input type="url" id="tiktokAccount">
-
-  <div class="terms">
-    <input type="checkbox" id="agree"> أتعهد بصحة البيانات ومشاركتي الفعلية في النشر، وأوافق على الشروط التالية:
-    <ul>
-      <li>أقر أن البيانات صحيحة ومملوكة لي.</li>
-      <li>سأقوم بنشر المحتوى المصور عبر حساباتي.</li>
-      <li> لن أقوم باستخدام الأغاني في المقاطع المنشورة.</li>
-      <li>يحق لـ عصيرات بنقا استخدام هذه الروابط لأغراض التوثيق.</li>
-    </ul>
+  <div class="header">
+    <img src="logo.png" alt="شعار بنقا" />
   </div>
 
-  <button onclick="goToStep2()">التالي</button>
-</div>
+  <div class="container" id="step1">
+    <h2 style="color:#e89c00">تسجيل حضور المعلنين</h2>
+    <label>اسم الشهرة أو الاسم المستعار</label>
+    <input type="text" id="displayName" />
 
-<!-- باقي المحتوى يبقى كما هو بدون تعديل -->
+    <label>اسم المستخدم في تيك توك</label>
+    <input type="text" id="username" />
 
+    <label>رابط حساب تيك توك</label>
+    <input type="url" id="tiktokAccount" />
 
-<div class="container hidden" id="step2">
-  <label>اسم الشهرة أو الاسم المستعار</label>
-  <input type="text" id="savedDisplayName" readonly>
+    <div class="terms">
+      <input type="checkbox" id="agree" />
+      أتعهد بصحة البيانات ومشاركتي الفعلية في النشر، وأوافق على الشروط التالية:
+      <ul>
+        <li>أقر أن البيانات صحيحة ومملوكة لي.</li>
+        <li>سأقوم بنشر المحتوى المصور عبر حساباتي.</li>
+        <li>لن أقوم باستخدام الأغاني في المقاطع المنشورة.</li>
+        <li>يحق لـ عصيرات بنقا استخدام هذه الروابط لأغراض التوثيق.</li>
+      </ul>
+    </div>
 
-  <label>اسم المستخدم في تيك توك</label>
-  <input type="text" id="savedUsername" readonly>
+    <button id="nextBtn" onclick="goToStep2()">التالي</button>
+    <div id="loadingMsg" class="hidden">جاري الحفظ...</div>
+  </div>
 
-  <label>رابط حساب تيك توك</label>
-  <input type="url" id="savedTiktokAccount" readonly>
+  <div class="container hidden" id="step2">
+    <label>اسم الشهرة أو الاسم المستعار</label>
+    <input type="text" id="savedDisplayName" readonly />
 
-  <p style="color:#888; margin-top: 20px;">
-    تم حفظ بياناتك. يمكنك إرفاق روابط النشر والتقييم لاحقًا عن طريق نفس الرابط.
-  </p>
-  
+    <label>اسم المستخدم في تيك توك</label>
+    <input type="text" id="savedUsername" readonly />
 
-  <label>رابط النشر في تيك توك <span style="color:red">*</span></label>
-  <input type="url" id="tiktokPost" required>
+    <label>رابط حساب تيك توك</label>
+    <input type="url" id="savedTiktokAccount" readonly />
 
-  <label>رابط النشر في سناب شات</label>
-  <input type="url" id="snapPost">
+    <p style="color:#888; margin-top: 20px;">
+      تم حفظ بياناتك. يمكنك إرفاق روابط النشر والتقييم لاحقًا عن طريق نفس الرابط.
+    </p>
 
-  <label>رابط النشر في إنستغرام</label>
-  <input type="url" id="instaPost">
+    <label>رابط النشر في تيك توك <span style="color:red">*</span></label>
+    <input type="url" id="tiktokPost" required />
 
-  <label>رابط تقييم قوقل ماب</label>
-  <input type="url" id="googleReview">
+    <label>رابط النشر في سناب شات</label>
+    <input type="url" id="snapPost" />
 
-  <button onclick="goBackToStep1()">العودة للتعديل</button>
-  <button onclick="submitForm()">تأكيد الإرسال</button>
-</div>
+    <label>رابط النشر في إنستغرام</label>
+    <input type="url" id="instaPost" />
 
-<div class="container hidden" id="thanks-container">
-  <h3 style="color:#2d9958">شكرًا لتعاونك!</h3>
-  <p>نلتقي في تعاون لاحق بإذن الله.</p>
-  <button onclick="location.reload()">تعديل البيانات</button>
-</div>
+    <label>رابط تقييم قوقل ماب</label>
+    <input type="url" id="googleReview" />
 
-<script>
-  const firebaseConfig = {
-    apiKey: "YOUR_API_KEY",
-    authDomain: "YOUR_AUTH_DOMAIN",
-    projectId: "YOUR_PROJECT_ID",
+    <button onclick="goBackToStep1()">العودة للتعديل</button>
+    <button onclick="submitForm()">تأكيد الإرسال</button>
+    <div id="submitLoadingMsg" class="hidden">جاري الإرسال...</div>
+  </div>
+
+  <div class="container hidden" id="thanks-container">
+    <h3 style="color:#2d9958">شكرًا لتعاونك!</h3>
+    <p>نلتقي في تعاون لاحق بإذن الله.</p>
+  </div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-app.js";
+import {
+  getFirestore,
+  doc,
+  setDoc,
+  collection,
+  query,
+  where,
+  getDocs
+} from "https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyAfvxROrhBdsFxkX9U5kriI4ySs9c41roY",
+  authDomain: "bangadata-57f98.firebaseapp.com",
+  projectId: "bangadata-57f98",
+  storageBucket: "bangadata-57f98.appspot.com",
+  messagingSenderId: "26361247251",
+  appId: "1:26361247251:web:d3c32ebcaeb15f6110f1e6",
+  measurementId: "G-BS2XW2VR70"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+const today = new Date().toLocaleDateString('en-GB').split('/').reverse().join('-');
+let documentId = "";
+
+window.goToStep2 = async function () {
+  const displayName = document.getElementById("displayName").value.trim();
+  const username = document.getElementById("username").value.trim();
+  const tiktokAccount = document.getElementById("tiktokAccount").value.trim();
+  const agree = document.getElementById("agree").checked;
+
+  if (!displayName || !username || !tiktokAccount || !agree) {
+    alert("يجب تعبئة جميع البيانات والموافقة على الشروط");
+    return;
+  }
+
+  document.getElementById("nextBtn").disabled = true;
+  document.getElementById("loadingMsg").classList.remove("hidden");
+
+  const oldData = JSON.parse(localStorage.getItem("marketerData") || "{}");
+  const isNewUser = !oldData.username || oldData.username !== username;
+
+  if (isNewUser) {
+    // تحقق من عدم وجود نفس username في قاعدة البيانات
+    const entriesRef = collection(db, "Vlogers-jul-2025", today, "entries");
+    const q = query(entriesRef, where("username", "==", username));
+    const querySnapshot = await getDocs(q);
+
+    if (!querySnapshot.empty) {
+      alert("تم تسجيل هذا المستخدم مسبقًا");
+      document.getElementById("loadingMsg").classList.add("hidden");
+      document.getElementById("nextBtn").disabled = false;
+      return;
+    }
+  }
+
+  documentId = displayName;
+  const data = {
+    displayName,
+    username: oldData.username && !isNewUser ? oldData.username : username,
+    tiktokAccount,
+    step1_time: new Date().toISOString(),
+    termsAccepted: true
   };
-  firebase.initializeApp(firebaseConfig);
-  const db = firebase.firestore();
 
-  function goToStep2() {
-    const displayName = document.getElementById('displayName').value;
-    const username = document.getElementById('username').value;
-    const tiktokAccount = document.getElementById('tiktokAccount').value;
-    const agree = document.getElementById('agree').checked;
+  await setDoc(doc(db, "Vlogers-jul-2025", today, "entries", documentId), data);
 
-    if (!displayName || !username || !tiktokAccount || !agree) {
-      alert("يجب تعبئة جميع البيانات والموافقة على الشروط");
-      return;
-    }
+  localStorage.setItem("marketerData", JSON.stringify({ ...data, documentId }));
 
-    localStorage.setItem("marketerData", JSON.stringify({ displayName, username, tiktokAccount }));
-    fillStep2Fields(displayName, username, tiktokAccount);
-    document.getElementById('step1').classList.add('hidden');
-    document.getElementById('step2').classList.remove('hidden');
+  fillStep2Fields(data);
+  document.getElementById("step1").classList.add("hidden");
+  document.getElementById("step2").classList.remove("hidden");
+};
+
+
+window.fillStep2Fields = function(data) {
+  documentId = data.documentId || data.displayName;
+  document.getElementById("savedDisplayName").value = data.displayName;
+  document.getElementById("savedUsername").value = data.username;
+  document.getElementById("savedTiktokAccount").value = data.tiktokAccount;
+  document.getElementById("tiktokPost").value = data.tiktokPost || "";
+  document.getElementById("snapPost").value = data.snapPost || "";
+  document.getElementById("instaPost").value = data.instaPost || "";
+  document.getElementById("googleReview").value = data.googleReview || "";
+};
+
+window.goBackToStep1 = function () {
+  const data = JSON.parse(localStorage.getItem("marketerData") || "{}");
+  if (data.displayName) {
+    document.getElementById("displayName").value = data.displayName;
+    document.getElementById("username").value = data.username;
+    document.getElementById("tiktokAccount").value = data.tiktokAccount;
+    document.getElementById("agree").checked = true;
   }
+  document.getElementById("step2").classList.add("hidden");
+  document.getElementById("step1").classList.remove("hidden");
+};
 
-  function goBackToStep1() {
-    const saved = JSON.parse(localStorage.getItem("marketerData"));
-    if (saved) {
-      document.getElementById('displayName').value = saved.displayName;
-      document.getElementById('username').value = saved.username;
-      document.getElementById('tiktokAccount').value = saved.tiktokAccount;
-    }
-    document.getElementById('step2').classList.add('hidden');
-    document.getElementById('step1').classList.remove('hidden');
-  }
+window.submitForm = async function () {
+  document.getElementById("submitLoadingMsg").classList.remove("hidden");
 
-  function fillStep2Fields(displayName, username, tiktokAccount) {
-    document.getElementById('savedDisplayName').value = displayName;
-    document.getElementById('savedUsername').value = username;
-    document.getElementById('savedTiktokAccount').value = tiktokAccount;
-  }
+  const tiktokPost = document.getElementById("tiktokPost").value.trim();
+  const snapPost = document.getElementById("snapPost").value.trim();
+  const instaPost = document.getElementById("instaPost").value.trim();
+  const googleReview = document.getElementById("googleReview").value.trim();
 
-  window.onload = () => {
-    const saved = JSON.parse(localStorage.getItem("marketerData"));
-    if (saved && saved.displayName && saved.username && saved.tiktokAccount) {
-      fillStep2Fields(saved.displayName, saved.username, saved.tiktokAccount);
-      document.getElementById('step1').classList.add('hidden');
-      document.getElementById('step2').classList.remove('hidden');
-    }
-  }
+  const updateData = {
+    tiktokPost,
+    snapPost,
+    instaPost,
+    googleReview,
+    step2_time: new Date().toISOString()
+  };
 
-  function submitForm() {
-    const saved = JSON.parse(localStorage.getItem("marketerData"));
-    const data = {
-      ...saved,
-      tiktokPost: document.getElementById('tiktokPost').value,
-      snapPost: document.getElementById('snapPost').value,
-      instaPost: document.getElementById('instaPost').value,
-      googleReview: document.getElementById('googleReview').value,
-      timestamp: new Date()
-    };
+  await setDoc(doc(db, "Vlogers-jul-2025", today, "entries", documentId), updateData, { merge: true });
 
-    if (!data.tiktokPost) {
-      alert("رابط تيك توك إلزامي");
-      return;
-    }
+  const old = JSON.parse(localStorage.getItem("marketerData") || "{}");
+  localStorage.setItem("marketerData", JSON.stringify({ ...old, ...updateData }));
 
-    db.collection("marketers").add(data).then(() => {
-      localStorage.removeItem("marketerData");
-      document.getElementById('step2').classList.add('hidden');
-      document.getElementById('thanks-container').classList.remove('hidden');
-    });
-  }
+  document.getElementById("step2").classList.add("hidden");
+  document.getElementById("thanks-container").classList.remove("hidden");
+};
+// عند فتح الصفحة: استرجع البيانات وافتح الخطوة الثانية إذا كانت محفوظة
+const saved = JSON.parse(localStorage.getItem("marketerData") || "{}");
+if (saved.displayName && saved.username && saved.tiktokAccount) {
+  documentId = saved.documentId || saved.displayName;
+  fillStep2Fields(saved);
+  document.getElementById("step1").classList.add("hidden");
+  document.getElementById("step2").classList.remove("hidden");
+}
+
+
 </script>
 </body>
 </html>
