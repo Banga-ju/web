@@ -206,34 +206,64 @@ window.goToStep2 = async function () {
 
   if (isNewUser) {
     // تحقق من عدم وجود نفس username في قاعدة البيانات
-    const entriesRef = collection(db, "Vlogers-jul-2025", today, "entries");
-    const q = query(entriesRef, where("username", "==", username));
-    const querySnapshot = await getDocs(q);
+  const entriesRef = collection(db, "Vlogers-jul-2025", today, "entries");
 
-    if (!querySnapshot.empty) {
-      alert("تم تسجيل هذا المستخدم مسبقًا");
-      document.getElementById("loadingMsg").classList.add("hidden");
-      document.getElementById("nextBtn").disabled = false;
-      return;
-    }
-  }
+// تحقق إن كان username موجود سابقًا
+const existingQuery = query(entriesRef, where("username", "==", username));
+const existingSnapshot = await getDocs(existingQuery);
 
-  documentId = displayName;
+if (!existingSnapshot.empty) {
+  alert("تم تسجيل هذا المستخدم مسبقًا");
+  document.getElementById("loadingMsg").classList.add("hidden");
+  document.getElementById("nextBtn").disabled = false;
+  return;
+}
+
+// تحقق إن كان username يطابق admin_username
+const adminQuery = query(entriesRef, where("admin_username", "==", username));
+const adminSnapshot = await getDocs(adminQuery);
+
+if (!adminSnapshot.empty) {
+  const adminDoc = adminSnapshot.docs[0];
+  documentId = adminDoc.id; // استخدم نفس المستند
+
   const data = {
     displayName,
-    username: oldData.username && !isNewUser ? oldData.username : username,
+    username,
     tiktokAccount,
     step1_time: new Date().toISOString(),
     termsAccepted: true
   };
 
-  await setDoc(doc(db, "Vlogers-jul-2025", today, "entries", documentId), data);
+  await setDoc(doc(db, "Vlogers-jul-2025", today, "entries", documentId), data, { merge: true });
 
   localStorage.setItem("marketerData", JSON.stringify({ ...data, documentId }));
 
   fillStep2Fields(data);
   document.getElementById("step1").classList.add("hidden");
   document.getElementById("step2").classList.remove("hidden");
+  return;
+}
+
+// إذا لم يوجد لا كـ username ولا admin_username → مستند جديد
+documentId = displayName;
+
+const newData = {
+  displayName,
+  username,
+  tiktokAccount,
+  step1_time: new Date().toISOString(),
+  termsAccepted: true
+};
+
+await setDoc(doc(db, "Vlogers-jul-2025", today, "entries", documentId), newData);
+
+localStorage.setItem("marketerData", JSON.stringify({ ...newData, documentId }));
+
+fillStep2Fields(newData);
+document.getElementById("step1").classList.add("hidden");
+document.getElementById("step2").classList.remove("hidden");
+
 };
 
 
