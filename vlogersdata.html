@@ -12,14 +12,12 @@
       margin: 0;
       color: #333;
     }
-
     .header {
       background: url('banner.jpg') center / cover no-repeat;
       padding: 20px;
       text-align: center;
       position: relative;
     }
-
     .header::before {
       content: '';
       position: absolute;
@@ -27,19 +25,16 @@
       background: rgba(0,0,0,0.6);
       z-index: 1;
     }
-
     .header img {
       position: relative;
       z-index: 2;
       max-width: 120px;
     }
-
     h2 {
       text-align: center;
       margin: 20px 0;
       font-weight: bold;
     }
-
     .accordion {
       margin: 20px auto;
       max-width: 600px;
@@ -48,7 +43,6 @@
       box-shadow: 0 2px 8px rgba(0,0,0,0.1);
       overflow: hidden;
     }
-
     .accordion-header {
       background: #ffb20c;
       color: white;
@@ -59,21 +53,17 @@
       align-items: center;
       font-weight: bold;
     }
-
     .accordion-header .arrow {
       transition: transform 0.3s ease;
     }
-
     .accordion-body {
       display: none;
       padding: 16px;
       background: #fafafa;
     }
-
     .accordion-body.open {
       display: block;
     }
-
     .entry-box {
       background: #fff;
       border-radius: 14px;
@@ -82,7 +72,6 @@
       margin-bottom: 20px;
       box-shadow: 0 3px 8px rgba(0,0,0,0.05);
     }
-
     .section {
       border: 1px solid #eee;
       border-radius: 10px;
@@ -90,57 +79,40 @@
       margin-bottom: 12px;
       background-color: #fafafa;
     }
-
     .field {
       margin-bottom: 8px;
       font-size: 15px;
     }
-
     .field span {
       font-weight: 600;
       color: #444;
     }
-
     .field a {
       color: #007acc;
       text-decoration: none;
     }
-
     .field a:hover {
       text-decoration: underline;
     }
-
     .time-box {
       display: flex;
       justify-content: space-between;
       text-align: center;
     }
-
     .time {
       flex: 1;
       border-right: 1px solid #ddd;
       padding: 8px;
     }
-
     .time:last-child {
       border-right: none;
     }
-
     .time span {
       font-weight: bold;
       color: #333;
     }
-
-    .success {
-      color: green;
-      font-weight: bold;
-    }
-
-    .fail {
-      color: red;
-      font-weight: bold;
-    }
-
+    .success { color: green; font-weight: bold; }
+    .fail { color: red; font-weight: bold; }
     .no-data {
       text-align: center;
       margin: 40px;
@@ -149,13 +121,10 @@
   </style>
 </head>
 <body>
-
   <div class="header">
     <img src="logo.png" alt="شعار بنقا" />
   </div>
-
   <h2>بيانات المعلنين</h2>
-
   <div class="accordion">
     <div class="accordion-header" id="toggleBtn">
       <span id="dayTitle">تحميل...</span>
@@ -163,16 +132,10 @@
     </div>
     <div class="accordion-body" id="entriesContainer"></div>
   </div>
-
   <div id="noData" class="no-data" style="display:none;">لا توجد سجلات في هذا اليوم</div>
-
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-app.js";
-    import {
-      getFirestore,
-      collection,
-      getDocs
-    } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore.js";
+    import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyAfvxROrhBdsFxkX9U5kriI4ySs9c41roY",
@@ -182,7 +145,11 @@
 
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
-    const day = "2025-07-14";
+    const today = new Date();
+const yyyy = today.getFullYear();
+const mm = String(today.getMonth() + 1).padStart(2, '0');
+const dd = String(today.getDate()).padStart(2, '0');
+const day = `${yyyy}-${mm}-${dd}`;
 
     const container = document.getElementById("entriesContainer");
     const noData = document.getElementById("noData");
@@ -214,41 +181,42 @@
       const weekday = weekdayNames[dateObj.getDay()];
       document.getElementById("dayTitle").textContent = `${weekday} - ${day}`;
 
-      const entries = [];
       snapshot.forEach(doc => {
         const data = doc.data();
-        entries.push(data);
-      });
-
-      entries.sort((a, b) => {
-        const sendA = new Date(b.step2_time || 0) - new Date(a.step2_time || 0);
-        if (sendA !== 0) return sendA;
-        return new Date(b.step1_time || 0) - new Date(a.step1_time || 0);
-      });
-
-      entries.forEach(data => {
         const div = document.createElement("div");
         div.innerHTML = `
-        <div class="entry-box">
-          <div class="section">
-            <div class="field"><span>الاسم:</span> ${data.displayName || ''}</div>
-            <div class="field"><span>المستخدم:</span> ${data.username || ''}</div>
-            <div class="field"><span>تيك توك:</span> ${data.tiktokAccount || ''}</div>
-          </div>
+  <div class="entry-box">
+    <div class="section">
+      <div class="field"><span>الاسم:</span> ${data.displayName || data.admin_displayName || ''}</div>
+      <div class="field"><span>المستخدم:</span> ${data.username || data.admin_username || ''}</div>
+      <div class="field"><span>تيك توك:</span> ${data.tiktokAccount || ''}</div>
+    </div>
 
-          <div class="section">
-            <div class="field"><span>رابط تيك توك:</span> <a href="${data.tiktokPost}" target="_blank">عرض</a></div>
-            <div class="field"><span>رابط سناب:</span> <a href="${data.snapPost}" target="_blank">عرض</a></div>
-            <div class="field"><span>رابط إنستقرام:</span> <a href="${data.instaPost}" target="_blank">عرض</a></div>
-            <div class="field"><span>رابط قوقل ماب:</span> <a href="${data.googleReview}" target="_blank">عرض</a></div>
-          </div>
 
-          <div class="section time-box">
-            <div class="time"><span>وقت الدخول:</span><br>${formatDate(data.step1_time)}</div>
-            <div class="time"><span>وقت الإرسال:</span><br>${formatDate(data.step2_time)}</div>
-            <div class="time"><span>الموافقة:</span><br>${data.termsAccepted ? '<span class="success">✔</span>' : '<span class="fail">✘</span>'}</div>
-          </div>
-        </div>`;
+
+
+    
+    <div class="section">
+         <div class="field"><span>الاسم:</span> ${data.displayName || data.displayName || ''}</div>
+      <div class="field"><span>المستخدم:</span> ${data.username || data.username || ''}</div>
+      <div class="field"><span>تيك توك:</span> ${data.tiktokAccount || ''}</div>
+      <div class="field"><span>تمت الموافقة على الشروط؟</span> ${data.agree ? '<span class="success">✔</span>' : '<span class="fail">✘</span>'}</div>
+    </div>
+
+    <div class="section">
+      <div class="field"><span>رابط تيك توك:</span> <a href="${data.tiktokPost || ''}" target="_blank">عرض</a></div>
+      <div class="field"><span>رابط سناب:</span> <a href="${data.snapPost || ''}" target="_blank">عرض</a></div>
+      <div class="field"><span>رابط إنستقرام:</span> <a href="${data.instaPost || ''}" target="_blank">عرض</a></div>
+      <div class="field"><span>رابط قوقل ماب:</span> <a href="${data.googleReview || ''}" target="_blank">عرض</a></div>
+    </div>
+
+    <div class="section time-box">
+      <div class="time"><span>وقت الدخول:</span><br>${formatDate(data.step1_time || data.admin_created_at?.toDate())}</div>
+      <div class="time"><span>وقت الإرسال:</span><br>${formatDate(data.step2_time)}</div>
+      <div class="time"><span>الموافقة:</span><br>${data.termsAccepted ? '<span class="success">✔</span>' : '<span class="fail">✘</span>'}</div>
+    </div>
+  </div>`;
+
         container.appendChild(div);
       });
 
