@@ -76,10 +76,45 @@
       border-radius: 8px;
       font-weight: bold;
     }
+
+    #statsBox {
+  display: flex;
+  justify-content: center;
+  gap: 40px;
+  margin: 20px auto;
+  padding: 14px 20px;
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  font-size: 18px;
+  font-weight: bold;
+  max-width: 400px;
+}
+.stat-item {
+  display: flex;
+  gap: 6px;
+}
+.label {
+  color: #555;
+}
+
+
+
   </style>
 </head>
 <body>
   <h2>حضور المعلنين</h2>
+  <div id="statsBox">
+    <div class="stat-item">
+      <span class="label">الحضور:</span>
+      <span id="attendanceCount">0</span>
+    </div>
+    <div class="stat-item">
+      <span class="label">رفعوا روابط:</span>
+      <span id="linksCount">0</span>
+    </div>
+  </div>
+  
   <div id="accordionContainer"></div>
   <div class="footer">
     <a href="vlogersdata.html">تفاصيل</a>
@@ -105,6 +140,20 @@
     const check = val => val ? '<span class="success">✔</span>' : '<span class="fail">✘</span>';
 
     const weekdayNames = ['الأحد','الاثنين','الثلاثاء','الأربعاء','الخميس','الجمعة','السبت'];
+
+
+    function formatTimeOnly(isoString) {
+  if (!isoString) return '';
+  const d = new Date(isoString);
+  let hours = d.getHours();
+  const minutes = String(d.getMinutes()).padStart(2, '0');
+  const ampm = hours >= 12 ? 'م' : 'ص';
+  hours = hours % 12;
+  hours = hours ? hours : 12;
+  return `${String(hours).padStart(2, '0')}:${minutes} ${ampm}`;
+}
+
+
 
     function formatDateLabel(d) {
       const dayName = weekdayNames[d.getDay()];
@@ -172,14 +221,21 @@ entries.sort((a, b) => {
   return timeB - timeA;
 });
 
+let attendanceCount = 0;
+let linksCount = 0;
 
 entries.forEach(d => {
+  if (d.username) attendanceCount++;
+if (d.tiktokPost || d.snapPost || d.instaPost || d.googleReview) linksCount++;
+
   const entry = document.createElement("div");
   entry.classList.add("entry-box");
   entry.innerHTML = `
     <div class="field"><span> الاسم:</span> ${d.admin_displayName || d.displayName || ''}</div>
     <div class="field"><span>المستخدم:</span> ${d.admin_username || d.username || ''}</div>
     <div class="field"><span>الحضور:</span> ${check(!!d.username)}</div>
+    <div class="time"><span>وقت الحضور: </span>${formatTimeOnly(d.step1_time)}</div>
+
     <div class="field"><span>رفع الروابط:</span> ${check(d.tiktokPost || d.snapPost || d.instaPost || d.googleReview)}</div>
   `;
   body.appendChild(entry);
@@ -190,6 +246,12 @@ entries.forEach(d => {
         wrapper.appendChild(header);
         wrapper.appendChild(body);
         container.appendChild(wrapper);
+        document.getElementById("attendanceCount").textContent =
+  parseInt(document.getElementById("attendanceCount").textContent) + attendanceCount;
+
+document.getElementById("linksCount").textContent =
+  parseInt(document.getElementById("linksCount").textContent) + linksCount;
+
       }
     }
 
