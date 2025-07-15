@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>حضور المعلنين </title>
+  <title>بيانات المعلنين - بنقا</title>
   <link href="https://fonts.googleapis.com/css2?family=Cairo&display=swap" rel="stylesheet" />
   <style>
     body {
@@ -11,6 +11,24 @@
       background: #f7f9fc;
       margin: 0;
       color: #333;
+    }
+    .header {
+      background: url('banner.jpg') center / cover no-repeat;
+      padding: 20px;
+      text-align: center;
+      position: relative;
+    }
+    .header::before {
+      content: '';
+      position: absolute;
+      top: 0; right: 0; bottom: 0; left: 0;
+      background: rgba(0,0,0,0.6);
+      z-index: 1;
+    }
+    .header img {
+      position: relative;
+      z-index: 2;
+      max-width: 120px;
     }
     h2 {
       text-align: center;
@@ -50,9 +68,16 @@
       background: #fff;
       border-radius: 14px;
       border: 1px solid #ddd;
-      padding: 14px;
-      margin-bottom: 14px;
+      padding: 20px;
+      margin-bottom: 20px;
       box-shadow: 0 3px 8px rgba(0,0,0,0.05);
+    }
+    .section {
+      border: 1px solid #eee;
+      border-radius: 10px;
+      padding: 12px 16px;
+      margin-bottom: 12px;
+      background-color: #fafafa;
     }
     .field {
       margin-bottom: 8px;
@@ -62,64 +87,53 @@
       font-weight: 600;
       color: #444;
     }
+    .field a {
+      color: #007acc;
+      text-decoration: none;
+    }
+    .field a:hover {
+      text-decoration: underline;
+    }
+    .time-box {
+      display: flex;
+      justify-content: space-between;
+      text-align: center;
+    }
+    .time {
+      flex: 1;
+      border-right: 1px solid #ddd;
+      padding: 8px;
+    }
+    .time:last-child {
+      border-right: none;
+    }
+    .time span {
+      font-weight: bold;
+      color: #333;
+    }
     .success { color: green; font-weight: bold; }
     .fail { color: red; font-weight: bold; }
-    .footer {
+    .no-data {
       text-align: center;
-      margin: 30px 0;
-    }
-    .footer a {
-      background: #ffb20c;
-      color: #fff;
-      padding: 10px 20px;
-      text-decoration: none;
-      border-radius: 8px;
+      margin: 40px;
       font-weight: bold;
     }
-
-    #statsBox {
-  display: flex;
-  justify-content: center;
-  gap: 40px;
-  margin: 20px auto;
-  padding: 14px 20px;
-  background: #fff;
-  border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-  font-size: 18px;
-  font-weight: bold;
-  max-width: 400px;
-}
-.stat-item {
-  display: flex;
-  gap: 6px;
-}
-.label {
-  color: #555;
-}
-
-
-
+    
   </style>
 </head>
 <body>
-  <h2>حضور المعلنين</h2>
-  <div id="statsBox">
-    <div class="stat-item">
-      <span class="label">الحضور:</span>
-      <span id="attendanceCount">0</span>
-    </div>
-    <div class="stat-item">
-      <span class="label">رفعوا روابط:</span>
-      <span id="linksCount">0</span>
-    </div>
+  <div class="header">
+    <img src="logo.png" alt="شعار بنقا" />
   </div>
-  
-  <div id="accordionContainer"></div>
-  <div class="footer">
-    <a href="vlogersdata.html">تفاصيل</a>
+  <h2>بيانات المعلنين</h2>
+  <div class="accordion">
+    <div class="accordion-header" id="toggleBtn">
+      <span id="dayTitle">تحميل...</span>
+      <span class="arrow" id="arrow">&#9654;</span>
+    </div>
+    <div class="accordion-body" id="entriesContainer"></div>
   </div>
-
+  <div id="noData" class="no-data" style="display:none;">لا توجد سجلات في هذا اليوم</div>
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-app.js";
     import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore.js";
@@ -132,15 +146,27 @@
 
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
+    const today = new Date();
+const yyyy = today.getFullYear();
+const mm = String(today.getMonth() + 1).padStart(2, '0');
+const dd = String(today.getDate()).padStart(2, '0');
+const day = `${yyyy}-${mm}-${dd}`;
 
-    const container = document.getElementById("accordionContainer");
+    const container = document.getElementById("entriesContainer");
+    const noData = document.getElementById("noData");
+    const toggleBtn = document.getElementById("toggleBtn");
+    const arrow = document.getElementById("arrow");
 
-    const days = 7; // عدد الأيام السابقة
+    toggleBtn.addEventListener("click", () => {
+      container.classList.toggle("open");
+      arrow.style.transform = container.classList.contains("open") ? "rotate(90deg)" : "rotate(0deg)";
+    });
 
-    const check = val => val ? '<span class="success">✔</span>' : '<span class="fail">✘</span>';
-
-    const weekdayNames = ['الأحد','الاثنين','الثلاثاء','الأربعاء','الخميس','الجمعة','السبت'];
-
+    function formatDate(isoString) {
+      if (!isoString) return '';
+      const d = new Date(isoString);
+      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+    }
 
     function formatTimeOnly(isoString) {
   if (!isoString) return '';
@@ -155,124 +181,76 @@
 
 
 
-    function formatDateLabel(d) {
-      const dayName = weekdayNames[d.getDay()];
-      const yyyy = d.getFullYear();
-      const mm = String(d.getMonth() + 1).padStart(2, '0');
-      const dd = String(d.getDate()).padStart(2, '0');
-      return `${dayName} - ${yyyy}-${mm}-${dd}`;
-    }
-
-    function formatDatePath(d) {
-      const yyyy = d.getFullYear();
-      const mm = String(d.getMonth() + 1).padStart(2, '0');
-      const dd = String(d.getDate()).padStart(2, '0');
-      return `${yyyy}-${mm}-${dd}`;
-    }
-
-    async function loadEntriesForDay(offset) {
-      const date = new Date();
-      date.setDate(date.getDate() - offset);
-      const label = formatDateLabel(date);
-      const path = formatDatePath(date);
-      const entriesRef = collection(db, "Vlogers-jul-2025", path, "entries");
+    async function loadData() {
+      const entriesRef = collection(db, "Vlogers-jul-2025", day, "entries");
       const snapshot = await getDocs(entriesRef);
 
-      const wrapper = document.createElement("div");
-      wrapper.classList.add("accordion");
+      if (snapshot.empty) {
+        noData.style.display = "block";
+        return;
+      }
 
-      const header = document.createElement("div");
-      header.classList.add("accordion-header");
-      header.innerHTML = `<span>${label}</span><span class="arrow">&#9654;</span>`;
+      const dateObj = new Date(day);
+      const weekdayNames = ['الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
+      const weekday = weekdayNames[dateObj.getDay()];
+      document.getElementById("dayTitle").textContent = `${weekday} - ${day}`;
 
-      const body = document.createElement("div");
-      body.classList.add("accordion-body");
+      const table = document.createElement("table");
+table.style.width = "150%";
+table.style.borderCollapse = "collapse";
+table.innerHTML = `
+  <thead>
+    <tr style="background:#eee;">
+      <th style="border:1px solid #ddd; padding:8px;">الاسم</th>
+      <th style="border:1px solid #ddd; padding:8px;">المستخدم</th>
+      <th style="border:1px solid #ddd; padding:8px;"> تيك توك</th>
+      <th style="border:1px solid #ddd; padding:8px;"> سناب</th>
+      <th style="border:1px solid #ddd; padding:8px;"> انستقرام</th>
+      <th style="border:1px solid #ddd; padding:8px;"> قوقل</th>
+      <th style="border:1px solid #ddd; padding:8px;"> الحضور</th>
+      <th style="border:1px solid #ddd; padding:8px;"> الإرسال</th>
+    </tr>
+  </thead>
+  <tbody></tbody>
+`;
 
-      header.addEventListener("click", () => {
-        body.classList.toggle("open");
-        header.querySelector(".arrow").style.transform = body.classList.contains("open") ? "rotate(90deg)" : "rotate(0deg)";
-      });
+const tbody = table.querySelector("tbody");
 
-      let hasData = false;
-      const entries = [];
-snapshot.forEach(doc => {
-  const d = doc.data();
-  if (d.admin_displayName || d.displayName) {
-  entries.push(d);
-  hasData = true;
-}
+const docs = snapshot.docs.map(doc => doc.data());
 
+// ترتيب حسب step1_time من الأحدث إلى الأقدم
+docs.sort((a, b) => {
+  const t1 = new Date(b.step1_time || 0).getTime();
+  const t2 = new Date(a.step1_time || 0).getTime();
+  return t1 - t2;
 });
 
-
-
-
-entries.sort((a, b) => {
-  const timeA = a.step1_time ? new Date(a.step1_time).getTime() : 0;
-  const timeB = b.step1_time ? new Date(b.step1_time).getTime() : 0;
-  return timeB - timeA; // الأحدث أولًا
-});
-
-
-
-
-let attendanceCount = 0;
-let linksCount = 0;
-
-if (entries.length > 0) {
-  const table = document.createElement("table");
-  table.style.width = "100%";
-  table.style.borderCollapse = "collapse";
-  table.innerHTML = `
-    <thead>
-      <tr style="background:#eee;">
-        <th style="border:1px solid #ddd; padding:8px;">الاسم</th>
-        <th style="border:1px solid #ddd; padding:8px;">المستخدم</th>
-        <th style="border:1px solid #ddd; padding:8px;">الحضور</th>
-        <th style="border:1px solid #ddd; padding:8px;">وقت الحضور</th>
-        <th style="border:1px solid #ddd; padding:8px;">رفع الروابط</th>
-      </tr>
-    </thead>
-    <tbody></tbody>
+docs.forEach(d => {
+  const tr = document.createElement("tr");
+  tr.innerHTML = `
+    <td style="border:1px solid #ddd; padding:6px;">${d.displayName || d.admin_displayName || ''}</td>
+    <td style="border:1px solid #ddd; padding:6px;">${d.username || d.admin_username || ''}</td>
+    <td style="border:1px solid #ddd; padding:6px;">${d.tiktokPost ? `<a href="${d.tiktokPost}" target="_blank">عرض</a>` : '-'}</td>
+    <td style="border:1px solid #ddd; padding:6px;">${d.snapPost ? `<a href="${d.snapPost}" target="_blank">عرض</a>` : '-'}</td>
+    <td style="border:1px solid #ddd; padding:6px;">${d.instaPost ? `<a href="${d.instaPost}" target="_blank">عرض</a>` : '-'}</td>
+    <td style="border:1px solid #ddd; padding:6px;">${d.googleReview ? `<a href="${d.googleReview}" target="_blank">عرض</a>` : '-'}</td>
+    <td style="border:1px solid #ddd; padding:6px;">${formatTimeOnly(d.step1_time )}</td>
+    <td style="border:1px solid #ddd; padding:6px;">${formatTimeOnly(d.step2_time)}</td>
   `;
+  tbody.appendChild(tr);
+});
 
-  const tbody = table.querySelector("tbody");
 
-  entries.forEach(d => {
-    if (d.username) attendanceCount++;
-    if (d.tiktokPost || d.snapPost || d.instaPost || d.googleReview) linksCount++;
+const scrollWrapper = document.createElement("div");
+scrollWrapper.style.overflowX = "auto";
+scrollWrapper.appendChild(table);
+container.appendChild(scrollWrapper);
 
-    const tr = document.createElement("tr");
-    tr.innerHTML = `
-      <td style="border:1px solid #ddd; padding:6px;">${d.admin_displayName || d.displayName || ''}</td>
-      <td style="border:1px solid #ddd; padding:6px;">${d.admin_username || d.username || ''}</td>
-      <td style="border:1px solid #ddd; padding:6px; text-align:center;">${check(!!d.username)}</td>
-      <td style="border:1px solid #ddd; padding:6px;">${formatTimeOnly(d.step1_time)}</td>
-      <td style="border:1px solid #ddd; padding:6px; text-align:center;">${check(d.tiktokPost || d.snapPost || d.instaPost || d.googleReview)}</td>
-    `;
-    tbody.appendChild(tr);
-  });
-
-  body.appendChild(table);
-}
-
-if (hasData) {
-  wrapper.appendChild(header);
-  wrapper.appendChild(body);
-  container.appendChild(wrapper);
-
-  document.getElementById("attendanceCount").textContent =
-    parseInt(document.getElementById("attendanceCount").textContent) + attendanceCount;
-
-  document.getElementById("linksCount").textContent =
-    parseInt(document.getElementById("linksCount").textContent) + linksCount;
-}
-
+      container.classList.add("open");
+      arrow.style.transform = "rotate(90deg)";
     }
 
-    for (let i = 0; i < days; i++) {
-      loadEntriesForDay(i);
-    }
+    loadData();
   </script>
 </body>
 </html>
