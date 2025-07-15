@@ -148,10 +148,11 @@
       const entries = [];
 snapshot.forEach(doc => {
   const d = doc.data();
-  if (d.admin_displayName) {
-    entries.push(d);
-    hasData = true;
-  }
+  if (d.admin_displayName || d.displayName) {
+  entries.push(d);
+  hasData = true;
+}
+
 });
 
 entries.sort((a, b) => {
