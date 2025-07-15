@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>بيانات المعلنين - بنقا</title>
+  <title>مسجلي الإدارة</title>
   <link href="https://fonts.googleapis.com/css2?family=Cairo&display=swap" rel="stylesheet" />
   <style>
     body {
@@ -11,24 +11,6 @@
       background: #f7f9fc;
       margin: 0;
       color: #333;
-    }
-    .header {
-      background: url('banner.jpg') center / cover no-repeat;
-      padding: 20px;
-      text-align: center;
-      position: relative;
-    }
-    .header::before {
-      content: '';
-      position: absolute;
-      top: 0; right: 0; bottom: 0; left: 0;
-      background: rgba(0,0,0,0.6);
-      z-index: 1;
-    }
-    .header img {
-      position: relative;
-      z-index: 2;
-      max-width: 120px;
     }
     h2 {
       text-align: center;
@@ -68,16 +50,9 @@
       background: #fff;
       border-radius: 14px;
       border: 1px solid #ddd;
-      padding: 20px;
-      margin-bottom: 20px;
+      padding: 14px;
+      margin-bottom: 14px;
       box-shadow: 0 3px 8px rgba(0,0,0,0.05);
-    }
-    .section {
-      border: 1px solid #eee;
-      border-radius: 10px;
-      padding: 12px 16px;
-      margin-bottom: 12px;
-      background-color: #fafafa;
     }
     .field {
       margin-bottom: 8px;
@@ -87,52 +62,29 @@
       font-weight: 600;
       color: #444;
     }
-    .field a {
-      color: #007acc;
-      text-decoration: none;
-    }
-    .field a:hover {
-      text-decoration: underline;
-    }
-    .time-box {
-      display: flex;
-      justify-content: space-between;
-      text-align: center;
-    }
-    .time {
-      flex: 1;
-      border-right: 1px solid #ddd;
-      padding: 8px;
-    }
-    .time:last-child {
-      border-right: none;
-    }
-    .time span {
-      font-weight: bold;
-      color: #333;
-    }
     .success { color: green; font-weight: bold; }
     .fail { color: red; font-weight: bold; }
-    .no-data {
+    .footer {
       text-align: center;
-      margin: 40px;
+      margin: 30px 0;
+    }
+    .footer a {
+      background: #ffb20c;
+      color: #fff;
+      padding: 10px 20px;
+      text-decoration: none;
+      border-radius: 8px;
       font-weight: bold;
     }
   </style>
 </head>
 <body>
-  <div class="header">
-    <img src="logo.png" alt="شعار بنقا" />
+  <h2>مسجلي الإدارة</h2>
+  <div id="accordionContainer"></div>
+  <div class="footer">
+    <a href="vlogersdata.html">تفاصيل</a>
   </div>
-  <h2>بيانات المعلنين</h2>
-  <div class="accordion">
-    <div class="accordion-header" id="toggleBtn">
-      <span id="dayTitle">تحميل...</span>
-      <span class="arrow" id="arrow">&#9654;</span>
-    </div>
-    <div class="accordion-body" id="entriesContainer"></div>
-  </div>
-  <div id="noData" class="no-data" style="display:none;">لا توجد سجلات في هذا اليوم</div>
+
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-app.js";
     import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore.js";
@@ -145,86 +97,81 @@
 
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
-    const today = new Date();
-const yyyy = today.getFullYear();
-const mm = String(today.getMonth() + 1).padStart(2, '0');
-const dd = String(today.getDate()).padStart(2, '0');
-const day = `${yyyy}-${mm}-${dd}`;
 
-    const container = document.getElementById("entriesContainer");
-    const noData = document.getElementById("noData");
-    const toggleBtn = document.getElementById("toggleBtn");
-    const arrow = document.getElementById("arrow");
+    const container = document.getElementById("accordionContainer");
 
-    toggleBtn.addEventListener("click", () => {
-      container.classList.toggle("open");
-      arrow.style.transform = container.classList.contains("open") ? "rotate(90deg)" : "rotate(0deg)";
-    });
+    const days = 7; // عدد الأيام السابقة
 
-    function formatDate(isoString) {
-      if (!isoString) return '';
-      const d = new Date(isoString);
-      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+    const check = val => val ? '<span class="success">✔</span>' : '<span class="fail">✘</span>';
+
+    const weekdayNames = ['الأحد','الاثنين','الثلاثاء','الأربعاء','الخميس','الجمعة','السبت'];
+
+    function formatDateLabel(d) {
+      const dayName = weekdayNames[d.getDay()];
+      const yyyy = d.getFullYear();
+      const mm = String(d.getMonth() + 1).padStart(2, '0');
+      const dd = String(d.getDate()).padStart(2, '0');
+      return `${dayName} - ${yyyy}-${mm}-${dd}`;
     }
 
-    async function loadData() {
-      const entriesRef = collection(db, "Vlogers-jul-2025", day, "entries");
+    function formatDatePath(d) {
+      const yyyy = d.getFullYear();
+      const mm = String(d.getMonth() + 1).padStart(2, '0');
+      const dd = String(d.getDate()).padStart(2, '0');
+      return `${yyyy}-${mm}-${dd}`;
+    }
+
+    async function loadEntriesForDay(offset) {
+      const date = new Date();
+      date.setDate(date.getDate() - offset);
+      const label = formatDateLabel(date);
+      const path = formatDatePath(date);
+      const entriesRef = collection(db, "Vlogers-jul-2025", path, "entries");
       const snapshot = await getDocs(entriesRef);
 
-      if (snapshot.empty) {
-        noData.style.display = "block";
-        return;
-      }
+      const wrapper = document.createElement("div");
+      wrapper.classList.add("accordion");
 
-      const dateObj = new Date(day);
-      const weekdayNames = ['الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
-      const weekday = weekdayNames[dateObj.getDay()];
-      document.getElementById("dayTitle").textContent = `${weekday} - ${day}`;
+      const header = document.createElement("div");
+      header.classList.add("accordion-header");
+      header.innerHTML = `<span>${label}</span><span class="arrow">&#9654;</span>`;
 
-      snapshot.forEach(doc => {
-        const data = doc.data();
-        const div = document.createElement("div");
-        div.innerHTML = `
-  <div class="entry-box">
-    <div class="section">
-      <div class="field"><span>الاسم:</span> ${data.displayName || data.admin_displayName || ''}</div>
-      <div class="field"><span>المستخدم:</span> ${data.username || data.admin_username || ''}</div>
-      <div class="field"><span>تيك توك:</span> ${data.tiktokAccount || ''}</div>
-    </div>
+      const body = document.createElement("div");
+      body.classList.add("accordion-body");
 
-
-
-
-    
-    <div class="section">
-         <div class="field"><span>الاسم:</span> ${data.displayName || data.displayName || ''}</div>
-      <div class="field"><span>المستخدم:</span> ${data.username || data.username || ''}</div>
-      <div class="field"><span>تيك توك:</span> ${data.tiktokAccount || ''}</div>
-      <div class="field"><span>تمت الموافقة على الشروط؟</span> ${data.agree ? '<span class="success">✔</span>' : '<span class="fail">✘</span>'}</div>
-    </div>
-
-    <div class="section">
-      <div class="field"><span>رابط تيك توك:</span> <a href="${data.tiktokPost || ''}" target="_blank">عرض</a></div>
-      <div class="field"><span>رابط سناب:</span> <a href="${data.snapPost || ''}" target="_blank">عرض</a></div>
-      <div class="field"><span>رابط إنستقرام:</span> <a href="${data.instaPost || ''}" target="_blank">عرض</a></div>
-      <div class="field"><span>رابط قوقل ماب:</span> <a href="${data.googleReview || ''}" target="_blank">عرض</a></div>
-    </div>
-
-    <div class="section time-box">
-      <div class="time"><span>وقت الدخول:</span><br>${formatDate(data.step1_time || data.admin_created_at?.toDate())}</div>
-      <div class="time"><span>وقت الإرسال:</span><br>${formatDate(data.step2_time)}</div>
-      <div class="time"><span>الموافقة:</span><br>${data.termsAccepted ? '<span class="success">✔</span>' : '<span class="fail">✘</span>'}</div>
-    </div>
-  </div>`;
-
-        container.appendChild(div);
+      header.addEventListener("click", () => {
+        body.classList.toggle("open");
+        header.querySelector(".arrow").style.transform = body.classList.contains("open") ? "rotate(90deg)" : "rotate(0deg)";
       });
 
-      container.classList.add("open");
-      arrow.style.transform = "rotate(90deg)";
+      let hasData = false;
+      snapshot.forEach(doc => {
+        const d = doc.data();
+        if (d.admin_displayName) {
+          hasData = true;
+          const entry = document.createElement("div");
+          entry.classList.add("entry-box");
+          entry.innerHTML = `
+          <div class="field"><span> الاسم:</span> ${d.admin_displayName || d.displayName || ''}</div>
+<div class="field"><span>المستخدم:</span> ${d.admin_username || d.username || ''}</div>
+
+            <div class="field"><span>الحضور:</span> ${check(!!d.username)}</div>
+            <div class="field"><span>رفع الروابط:</span> ${check(d.tiktokPost || d.snapPost || d.instaPost || d.googleReview)}</div>
+          `;
+          body.appendChild(entry);
+        }
+      });
+
+      if (hasData) {
+        wrapper.appendChild(header);
+        wrapper.appendChild(body);
+        container.appendChild(wrapper);
+      }
     }
 
-    loadData();
+    for (let i = 0; i < days; i++) {
+      loadEntriesForDay(i);
+    }
   </script>
 </body>
 </html>
