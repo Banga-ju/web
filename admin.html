@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+  <meta charset="UTF-8">
+  <title>إضافة معلن من الإدارة</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <style>
+    body {
+      font-family: 'Cairo', sans-serif;
+      padding: 20px;
+      background: #f8f8f8;
+      direction: rtl;
+    }
+    .form-group {
+      margin-bottom: 15px;
+    }
+    label {
+      display: block;
+      margin-bottom: 5px;
+      font-weight: bold;
+    }
+    input {
+      padding: 10px;
+      width: 100%;
+      font-size: 16px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+    }
+    button {
+      background-color: #2e9d51;
+      color: white;
+      padding: 12px 25px;
+      font-size: 16px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      width: 100%;
+      margin-top: 10px;
+    }
+    table {
+      width: 100%;
+      margin-top: 20px;
+      border-collapse: collapse;
+      background: white;
+    }
+    th, td {
+      padding: 10px;
+      border: 1px solid #ccc;
+      text-align: center;
+    }
+    th {
+      background-color: #ddd;
+    }
+  </style>
+</head>
+<body>
+
+  <h2>إضافة معلن من الإدارة</h2>
+
+  <div class="form-group">
+    <label for="name">اسم المعلن</label>
+    <input type="text" id="name" required>
+  </div>
+
+  <div class="form-group">
+    <label for="username">اسم المستخدم (TikTok)</label>
+    <input type="text" id="username" required>
+  </div>
+
+  <div class="form-group">
+    <label for="date">تاريخ الإعلان</label>
+    <input type="date" id="date">
+  </div>
+
+  <button onclick="saveAdminEntry()">حفظ البيانات</button>
+
+  <hr>
+  <h3>رفع قائمة من ملف Excel</h3>
+  <input type="file" id="excelFile" accept=".xlsx,.xls" onchange="handleExcelUpload()" />
+
+  <table id="previewTable" style="display:none;">
+    <thead>
+      <tr>
+        <th>الاسم</th>
+        <th>username</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyAfvxROrhBdsFxkX9U5kriI4ySs9c41roY",
+      authDomain: "bangadata-57f98.firebaseapp.com",
+      projectId: "bangadata-57f98",
+      storageBucket: "bangadata-57f98.firebasestorage.app",
+      messagingSenderId: "26361247251",
+      appId: "1:26361247251:web:d3c32ebcaeb15f6110f1e6",
+      measurementId: "G-BS2XW2VR70"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+
+    function getTodayId() {
+      const dateInput = document.getElementById("date").value;
+      if (dateInput) return dateInput;
+      const today = new Date();
+      const yyyy = today.getFullYear();
+      const mm = String(today.getMonth() + 1).padStart(2, '0');
+      const dd = String(today.getDate()).padStart(2, '0');
+      return `${yyyy}-${mm}-${dd}`;
+    }
+
+    function saveAdminEntry() {
+      const name = document.getElementById("name").value.trim();
+      const username = document.getElementById("username").value.trim().toLowerCase();
+      const date = getTodayId();
+
+      if (!name || !username) {
+        alert("يرجى تعبئة جميع الحقول");
+        return;
+      }
+
+      const docId = name;
+
+      db.collection("Vlogers-jul-2025")
+        .doc(date)
+        .collection("entries")
+        .doc(docId)
+        .set({
+          admin_displayName: name,
+          admin_username: username,
+          admin_created_at: firebase.firestore.Timestamp.now()
+        })
+        .then(() => {
+          alert("تم حفظ بيانات المعلن بنجاح");
+          document.getElementById("name").value = "";
+          document.getElementById("username").value = "";
+          document.getElementById("date").value = "";
+        })
+        .catch(error => {
+          console.error("خطأ في الحفظ:", error);
+          alert("فشل في حفظ البيانات");
+        });
+    }
+
+    function handleExcelUpload() {
+      const file = document.getElementById("excelFile").files[0];
+      const date = getTodayId();
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        const data = new Uint8Array(e.target.result);
+        const workbook = XLSX.read(data, { type: 'array' });
+        const sheet = workbook.Sheets[workbook.SheetNames[0]];
+        const json = XLSX.utils.sheet_to_json(sheet);
+
+        const table = document.getElementById("previewTable");
+        const tbody = table.querySelector("tbody");
+        tbody.innerHTML = "";
+        table.style.display = "table";
+
+        json.forEach(entry => {
+          const name = entry["الاسم"]?.toString().trim();
+          const username = entry["username"]?.toString().trim().toLowerCase();
+          if (!name || !username) return;
+
+          // عرض في الجدول
+          const row = document.createElement("tr");
+          row.innerHTML = `<td>${name}</td><td>${username}</td>`;
+          tbody.appendChild(row);
+
+          // رفع إلى فايربيس
+          db.collection("Vlogers-jul-2025")
+            .doc(date)
+            .collection("entries")
+            .doc(name)
+            .set({
+              admin_displayName: name,
+              admin_username: username,
+              admin_created_at: firebase.firestore.Timestamp.now()
+            })
+            .then(() => console.log(`✅ تم رفع: ${name}`))
+            .catch(err => console.error("❌ خطأ", err));
+        });
+
+        alert("تم رفع البيانات من ملف Excel بنجاح");
+      };
+      reader.readAsArrayBuffer(file);
+    }
+  </script>
+
+</body>
+</html>
