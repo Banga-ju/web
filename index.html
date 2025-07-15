@@ -82,11 +82,8 @@
       font-size: 15px;
     }
     button {
-  font-family: 'Cairo', sans-serif;
-}
-
-
-
+      font-family: 'Cairo', sans-serif;
+    }
   </style>
 </head>
 <body>
@@ -146,11 +143,10 @@
     <label>رابط تقييم قوقل ماب<span style="color:red">*</span></label>
     <input type="url" id="googleReview" />
 
-    <div style="display: flex; gap: 10px;margin-bottom: 40px;    ">
-        <button onclick="goBackToStep1()" style="background-color: #e0e0e0; color: #000; padding: 10px 20px; font-size: 16px; border: none; border-radius: 8px; cursor: pointer; flex: 1;">العودة للتعديل</button>
-        <button onclick="submitForm()" style="background-color: #2e9d51; color: #fff; padding: 10px 20px; font-size: 16px; border: none; border-radius: 8px; cursor: pointer; flex: 1;">تأكيد الإرسال</button>
-      </div>
-
+    <div style="display: flex; gap: 10px;margin-bottom: 40px;">
+      <button onclick="goBackToStep1()" style="background-color: #e0e0e0; color: #000; padding: 10px 20px; font-size: 16px; border: none; border-radius: 8px; cursor: pointer; flex: 1;">العودة للتعديل</button>
+      <button onclick="submitForm()" style="background-color: #2e9d51; color: #fff; padding: 10px 20px; font-size: 16px; border: none; border-radius: 8px; cursor: pointer; flex: 1;">تأكيد الإرسال</button>
+    </div>
 
     <div id="submitLoadingMsg" class="hidden">جاري الإرسال...</div>
   </div>
@@ -185,7 +181,7 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const today = new Date().toLocaleDateString('en-GB').split('/').reverse().join('-');
-let documentId = "";
+window.documentId = "";
 
 window.goToStep2 = async function () {
   const displayName = document.getElementById("displayName").value.trim();
@@ -201,31 +197,28 @@ window.goToStep2 = async function () {
   document.getElementById("nextBtn").disabled = true;
   document.getElementById("loadingMsg").classList.remove("hidden");
 
-  const oldData = JSON.parse(localStorage.getItem("marketerData") || "{}");
-  const isNewUser = !oldData.username || oldData.username !== username;
-
-  if (isNewUser) {
-    // تحقق من عدم وجود نفس username في قاعدة البيانات
   const entriesRef = collection(db, "Vlogers-jul-2025", today, "entries");
 
-// تحقق إن كان username موجود سابقًا
-const existingQuery = query(entriesRef, where("username", "==", username));
-const existingSnapshot = await getDocs(existingQuery);
+  const savedId = window.documentId || "";
+  const existingQuery = query(entriesRef, where("username", "==", username));
+  const existingSnapshot = await getDocs(existingQuery);
 
-if (!existingSnapshot.empty) {
-  alert("تم تسجيل هذا المستخدم مسبقًا");
-  document.getElementById("loadingMsg").classList.add("hidden");
-  document.getElementById("nextBtn").disabled = false;
-  return;
-}
+  if (!existingSnapshot.empty && !savedId) {
+    alert("تم تسجيل هذا المستخدم مسبقًا");
+    document.getElementById("loadingMsg").classList.add("hidden");
+    document.getElementById("nextBtn").disabled = false;
+    return;
+  }
 
-// تحقق إن كان username يطابق admin_username
-const adminQuery = query(entriesRef, where("admin_username", "==", username));
-const adminSnapshot = await getDocs(adminQuery);
 
-if (!adminSnapshot.empty) {
-  const adminDoc = adminSnapshot.docs[0];
-  documentId = adminDoc.id; // استخدم نفس المستند
+  const adminQuery = query(entriesRef, where("admin_username", "==", username));
+  const adminSnapshot = await getDocs(adminQuery);
+  if (!adminSnapshot.empty) {
+    const adminDoc = adminSnapshot.docs[0];
+    window.documentId = adminDoc.id;
+  } else {
+    window.documentId = displayName;
+  }
 
   const data = {
     displayName,
@@ -235,40 +228,16 @@ if (!adminSnapshot.empty) {
     termsAccepted: true
   };
 
-  await setDoc(doc(db, "Vlogers-jul-2025", today, "entries", documentId), data, { merge: true });
-
-  localStorage.setItem("marketerData", JSON.stringify({ ...data, documentId }));
+  await setDoc(doc(db, "Vlogers-jul-2025", today, "entries", window.documentId), data, { merge: true });
+  localStorage.setItem("marketerData", JSON.stringify({ ...data, documentId: window.documentId }));
 
   fillStep2Fields(data);
   document.getElementById("step1").classList.add("hidden");
   document.getElementById("step2").classList.remove("hidden");
-  return;
-}
-
-// إذا لم يوجد لا كـ username ولا admin_username → مستند جديد
-documentId = displayName;
-
-const newData = {
-  displayName,
-  username,
-  tiktokAccount,
-  step1_time: new Date().toISOString(),
-  termsAccepted: true
 };
-
-await setDoc(doc(db, "Vlogers-jul-2025", today, "entries", documentId), newData);
-
-localStorage.setItem("marketerData", JSON.stringify({ ...newData, documentId }));
-
-fillStep2Fields(newData);
-document.getElementById("step1").classList.add("hidden");
-document.getElementById("step2").classList.remove("hidden");
-
-};
-
 
 window.fillStep2Fields = function(data) {
-  documentId = data.documentId || data.displayName;
+  window.documentId = data.documentId || data.displayName;
   document.getElementById("savedDisplayName").value = data.displayName;
   document.getElementById("savedUsername").value = data.username;
   document.getElementById("savedTiktokAccount").value = data.tiktokAccount;
@@ -296,7 +265,6 @@ window.submitForm = async function () {
   const instaPost = document.getElementById("instaPost").value.trim();
   const googleReview = document.getElementById("googleReview").value.trim();
 
-  // التحقق من الحقول الإلزامية
   if (!tiktokPost || !googleReview) {
     alert("يجب تعبئة رابط النشر في تيك توك ورابط التقييم في قوقل ماب.");
     return;
@@ -312,7 +280,12 @@ window.submitForm = async function () {
     step2_time: new Date().toISOString()
   };
 
-  await setDoc(doc(db, "Vlogers-jul-2025", today, "entries", documentId), updateData, { merge: true });
+  if (!window.documentId) {
+    alert("حدث خطأ في استرجاع بيانات المستخدم.");
+    return;
+  }
+
+  await setDoc(doc(db, "Vlogers-jul-2025", today, "entries", window.documentId), updateData, { merge: true });
 
   const old = JSON.parse(localStorage.getItem("marketerData") || "{}");
   localStorage.setItem("marketerData", JSON.stringify({ ...old, ...updateData }));
@@ -321,16 +294,13 @@ window.submitForm = async function () {
   document.getElementById("thanks-container").classList.remove("hidden");
 };
 
-// عند فتح الصفحة: استرجع البيانات وافتح الخطوة الثانية إذا كانت محفوظة
 const saved = JSON.parse(localStorage.getItem("marketerData") || "{}");
 if (saved.displayName && saved.username && saved.tiktokAccount) {
-  documentId = saved.documentId || saved.displayName;
+  window.documentId = saved.documentId || saved.displayName;
   fillStep2Fields(saved);
   document.getElementById("step1").classList.add("hidden");
   document.getElementById("step2").classList.remove("hidden");
-};
-
-
+}
 </script>
 </body>
 </html>
