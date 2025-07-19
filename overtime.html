@@ -1,0 +1,1339 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>حساب الساعات الإضافية للموظفين</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+
+    <link href="https://fonts.googleapis.com/css2?family=Cairo&display=swap" rel="stylesheet" />
+
+        font-family: 'Cairo', sans-serif;
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Cairo', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .card {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 25px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.15);
+        }
+
+        .card h3 {
+            color: #667eea;
+            margin-bottom: 20px;
+            font-size: 1.4rem;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 10px;
+        }
+
+        .file-upload {
+            border: 3px dashed #667eea;
+            border-radius: 10px;
+            padding: 40px;
+            text-align: center;
+            transition: all 0.3s ease;
+            background: linear-gradient(45deg, #f8f9ff, #e8ecff);
+        }
+
+        .file-upload:hover,
+        .file-upload.dragover {
+            border-color: #764ba2;
+            background: linear-gradient(45deg, #fff5f5, #ffe8e8);
+            transform: scale(1.02);
+        }
+
+        .file-upload input[type="file"] {
+            display: none;
+        }
+
+        .file-upload-btn {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            padding: 15px 30px;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 1.1rem;
+            transition: all 0.3s ease;
+            display: inline-block;
+            margin: 10px 5px;
+        }
+
+        .file-upload-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+        }
+
+        .sample-btn {
+            background: linear-gradient(135deg, #ff6b6b, #ee5a24);
+            margin-right: 10px;
+        }
+
+        .sample-btn:hover {
+            box-shadow: 0 8px 25px rgba(255, 107, 107, 0.4);
+        }
+
+        .settings-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 25px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #444;
+        }
+
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #e0e6ed;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: border-color 0.3s ease;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .employee-rates-section {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+
+        .employee-rate-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid #e0e6ed;
+        }
+
+        .employee-rate-item:last-child {
+            border-bottom: none;
+        }
+
+        .vacation-settings {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+
+        .employee-vacation-item {
+            display: grid;
+            grid-template-columns: 2fr 2fr 1fr;
+            gap: 15px;
+            align-items: center;
+            padding: 10px 0;
+            border-bottom: 1px solid #ffd60a;
+        }
+
+        .employee-vacation-item:last-child {
+            border-bottom: none;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            padding: 12px 25px;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            margin: 5px;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #28a745, #20c997);
+        }
+
+        .btn-success:hover {
+            box-shadow: 0 8px 25px rgba(40, 167, 69, 0.4);
+        }
+
+        .summary-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin: 25px 0;
+        }
+
+        .summary-card {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            padding: 25px;
+            border-radius: 15px;
+            text-align: center;
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
+        }
+
+        .summary-card h4 {
+            font-size: 1.1rem;
+            margin-bottom: 10px;
+            opacity: 0.9;
+        }
+
+        .summary-card .value {
+            font-size: 2rem;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .filters-section {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+        }
+
+        .filters-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+
+        .table-container {
+            overflow-x: auto;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+            font-size: 0.9rem;
+        }
+
+        table th,
+        table td {
+            padding: 12px 8px;
+            text-align: center;
+            border-bottom: 1px solid #e0e6ed;
+        }
+
+        table th {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.3s ease;
+        }
+
+        table th:hover {
+            background: linear-gradient(135deg, #764ba2, #667eea);
+        }
+
+        table tbody tr:hover {
+            background: #f8f9ff;
+        }
+
+        .day-type-work { background-color: #e3f2fd !important; }
+        .day-type-weekend { background-color: #fce4ec !important; }
+        .day-type-vacation { background-color: #fff3e0 !important; }
+        .adjusted-time { background-color: #e8f4fd; }
+
+        .export-section {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin: 20px 0;
+            justify-content: center;
+        }
+
+        .btn-export {
+            background: linear-gradient(135deg, #28a745, #20c997);
+            margin: 0;
+        }
+
+        .btn-print {
+            background: linear-gradient(135deg, #6c757d, #495057);
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+            color: #667eea;
+        }
+
+        .loading.show {
+            display: block;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .alert {
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+        }
+
+        .alert-success {
+            background: #d1edcc;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .alert-error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 10px;
+            }
+
+            .header h1 {
+                font-size: 1.8rem;
+            }
+
+            .settings-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .employee-vacation-item {
+                grid-template-columns: 1fr;
+                gap: 10px;
+            }
+
+            .summary-cards {
+                grid-template-columns: 1fr;
+            }
+
+            .filters-grid {
+                grid-template-columns: 1fr;
+            }
+
+            table {
+                font-size: 0.8rem;
+            }
+
+            table th,
+            table td {
+                padding: 8px 4px;
+            }
+        }
+
+        @media print {
+            body {
+                background: white;
+            }
+            .card {
+                box-shadow: none;
+                border: 1px solid #ddd;
+            }
+            .btn, .file-upload, .filters-section {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🕐 حساب الساعات الإضافية للموظفين</h1>
+            <p>نظام شامل لحساب رواتب الساعات الإضافية من ملفات Excel و CSV</p>
+        </div>
+
+        <!-- File Upload Section -->
+        <div class="card">
+            <h3>📁 رفع ملف البيانات</h3>
+            <div class="file-upload" id="fileUpload">
+                <div class="upload-icon" style="font-size: 3rem; margin-bottom: 20px;">📄</div>
+                <p style="margin-bottom: 20px;">اسحب وأفلت الملف هنا أو انقر لاختيار الملف</p>
+                <input type="file" id="fileInput" accept=".xlsx,.xls,.csv">
+                <button class="file-upload-btn sample-btn" onclick="loadSampleData()">📊 تحميل بيانات نموذجية</button>
+                <button class="file-upload-btn" onclick="document.getElementById('fileInput').click()">📂 اختيار ملف</button>
+            </div>
+        </div>
+
+        <!-- Settings Section -->
+        <div class="card" id="settingsSection" style="display: none;">
+            <h3>⚙️ الإعدادات</h3>
+            <div class="settings-grid">
+                <div class="form-group">
+                    <label for="regularHours">ساعات العمل العادية (يومياً):</label>
+                    <input type="number" id="regularHours" value="9" min="1" max="24">
+                </div>
+                <div class="form-group">
+                    <label for="currency">العملة:</label>
+                    <select id="currency">
+                        <option value="SAR">ريال سعودي (SAR)</option>
+                        <option value="USD">دولار أمريكي (USD)</option>
+                        <option value="EUR">يورو (EUR)</option>
+                        <option value="AED">درهم إماراتي (AED)</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="overtimeMultiplier">مضاعف الساعات الإضافية:</label>
+                    <input type="number" id="overtimeMultiplier" value="1.5" step="0.1" readonly>
+                </div>
+                <div class="form-group">
+                    <label>أيام نهاية الأسبوع:</label>
+                    <div style="display: flex; gap: 10px; margin-top: 5px;">
+                        <label><input type="checkbox" id="weekendThu" checked> الخميس</label>
+                        <label><input type="checkbox" id="weekendFri" checked> الجمعة</label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Employee Rates -->
+            <div class="employee-rates-section">
+                <h4>💰 أسعار الموظفين (ريال/ساعة)</h4>
+                <div id="employeeRates"></div>
+            </div>
+
+            <!-- Vacation Settings -->
+            <div class="vacation-settings">
+                <h4>🏖️ إعدادات أيام الإجازة الشخصية</h4>
+                <div style="margin-bottom: 15px;">
+                    <label>
+                        <input type="radio" name="vacationCalc" value="full" checked>
+                        كامل الوقت إضافي (جميع ساعات يوم الإجازة تحسب إضافية)
+                    </label>
+                    <br>
+                    <label>
+                        <input type="radio" name="vacationCalc" value="excess">
+                        إضافي بعد الساعات العادية (فقط الساعات الزائدة عن 9 ساعات)
+                    </label>
+                </div>
+                <div id="employeeVacations"></div>
+            </div>
+
+            <div style="text-align: center;">
+                <button class="btn btn-success" onclick="calculateOvertime()">🧮 حساب الساعات الإضافية</button>
+            </div>
+        </div>
+
+        <!-- Loading Indicator -->
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <p>جاري المعالجة...</p>
+        </div>
+
+        <!-- Results Section -->
+        <div id="resultsSection" style="display: none;">
+            <!-- Summary Cards -->
+            <div class="summary-cards" id="summaryCards"></div>
+
+            <!-- Filters -->
+            <div class="card">
+                <h3>🔍 التصفية والبحث</h3>
+                <div class="filters-section">
+                    <div class="filters-grid">
+                        <div class="form-group">
+                            <label for="searchEmployee">البحث بالاسم:</label>
+                            <input type="text" id="searchEmployee" placeholder="اكتب اسم الموظف...">
+                        </div>
+                        <div class="form-group">
+                            <label for="filterDayType">نوع اليوم:</label>
+                            <select id="filterDayType">
+                                <option value="">جميع الأيام</option>
+                                <option value="work">أيام عمل</option>
+                                <option value="weekend">نهاية أسبوع</option>
+                                <option value="vacation">إجازة شخصية</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="dateFrom">من تاريخ:</label>
+                            <input type="date" id="dateFrom">
+                        </div>
+                        <div class="form-group">
+                            <label for="dateTo">إلى تاريخ:</label>
+                            <input type="date" id="dateTo">
+                        </div>
+                    </div>
+                    <div style="text-align: center;">
+                        <button class="btn" onclick="applyFilters()">تطبيق الفلاتر</button>
+                        <button class="btn" onclick="clearFilters()">مسح الفلاتر</button>
+                    </div>
+                    <div id="resultsCount" style="text-align: center; margin-top: 15px; font-weight: bold;"></div>
+                </div>
+            </div>
+
+            <!-- Employee Summary Table -->
+            <div class="card">
+                <h3>📊 ملخص الموظفين</h3>
+                <div class="table-container">
+                    <table id="employeeSummaryTable">
+                        <thead>
+                            <tr>
+                                <th onclick="sortTable('employeeSummaryTable', 0)">اسم الموظف ↕️</th>
+                                <th onclick="sortTable('employeeSummaryTable', 1)">عدد الورديات ↕️</th>
+                                <th onclick="sortTable('employeeSummaryTable', 2)">ورديات عادية ↕️</th>
+                                <th onclick="sortTable('employeeSummaryTable', 3)">ورديات إجازة ↕️</th>
+                                <th onclick="sortTable('employeeSummaryTable', 4)">إجمالي الساعات الفعلية ↕️</th>
+                                <th onclick="sortTable('employeeSummaryTable', 5)">إجمالي الساعات المعدلة ↕️</th>
+                                <th onclick="sortTable('employeeSummaryTable', 6)">إجمالي الساعات الإضافية ↕️</th>
+                                <th onclick="sortTable('employeeSummaryTable', 7)">سعر الساعة ↕️</th>
+                                <th onclick="sortTable('employeeSummaryTable', 8)">إجمالي المبلغ ↕️</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Daily Details Table -->
+            <div class="card">
+                <h3>📋 التفاصيل اليومية</h3>
+                <div class="table-container">
+                    <table id="dailyDetailsTable">
+                        <thead>
+                            <tr>
+                                <th onclick="sortTable('dailyDetailsTable', 0)">اسم الموظف ↕️</th>
+                                <th onclick="sortTable('dailyDetailsTable', 1)">اسم اليوم ↕️</th>
+                                <th onclick="sortTable('dailyDetailsTable', 2)">التاريخ ↕️</th>
+                                <th onclick="sortTable('dailyDetailsTable', 3)">نوع اليوم ↕️</th>
+                                <th onclick="sortTable('dailyDetailsTable', 4)">وقت الحضور ↕️</th>
+                                <th onclick="sortTable('dailyDetailsTable', 5)">وقت الانصراف الأصلي ↕️</th>
+                                <th onclick="sortTable('dailyDetailsTable', 6)">وقت الانصراف المعدل ↕️</th>
+                                <th onclick="sortTable('dailyDetailsTable', 7)">الساعات الفعلية ↕️</th>
+                                <th onclick="sortTable('dailyDetailsTable', 8)">الساعات المعدلة ↕️</th>
+                                <th onclick="sortTable('dailyDetailsTable', 9)">الساعات الإضافية ↕️</th>
+                                <th onclick="sortTable('dailyDetailsTable', 10)">مبلغ الساعات الإضافية ↕️</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Export Section -->
+            <div class="export-section">
+                <button class="btn btn-export" onclick="exportToExcel('summary')">📊 تصدير ملخص الموظفين - Excel</button>
+                <button class="btn btn-export" onclick="exportToExcel('details')">📋 تصدير التفاصيل اليومية - Excel</button>
+                <button class="btn btn-export" onclick="exportToExcel('filtered')">🔍 تصدير البيانات المفلترة - Excel</button>
+                <button class="btn btn-export" onclick="exportToCSV()">📄 تصدير إلى CSV</button>
+                <button class="btn btn-print" onclick="printReport()">🖨️ طباعة التقرير</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Global variables
+        let rawData = [];
+        let processedData = [];
+        let filteredData = [];
+        let employeeSummary = [];
+        let sortDirection = {};
+
+        // Predefined employee rates
+        const predefinedRates = {
+            'ماهر عادل': 10.41,
+            'أدهم': 4.16,
+            'محمد صابر': 4.16,
+            'Mohd Saber': 4.16
+        };
+
+        // Arabic month names
+        const arabicMonths = {
+            'يناير': 0, 'فبراير': 1, 'مارس': 2, 'أبريل': 3, 'مايو': 4, 'يونيو': 5,
+            'يوليو': 6, 'أغسطس': 7, 'سبتمبر': 8, 'أكتوبر': 9, 'نوفمبر': 10, 'ديسمبر': 11
+        };
+
+        // Arabic day names
+        const arabicDays = ['الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت','الأحد'];
+
+        // File handling
+        document.getElementById('fileInput').addEventListener('change', handleFile);
+        
+        const fileUpload = document.getElementById('fileUpload');
+        fileUpload.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            fileUpload.classList.add('dragover');
+        });
+        
+        fileUpload.addEventListener('dragleave', () => {
+            fileUpload.classList.remove('dragover');
+        });
+        
+        fileUpload.addEventListener('drop', (e) => {
+            e.preventDefault();
+            fileUpload.classList.remove('dragover');
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                handleFile({ target: { files: files } });
+            }
+        });
+
+        function handleFile(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            showAlert('جاري قراءة الملف...', 'success');
+            const reader = new FileReader();
+
+            reader.onload = function(e) {
+                try {
+                    if (file.name.endsWith('.csv')) {
+                        parseCSV(e.target.result);
+                    } else {
+                        parseExcel(e.target.result);
+                    }
+                } catch (error) {
+                    showAlert('خطأ في قراءة الملف: ' + error.message, 'error');
+                }
+            };
+
+            if (file.name.endsWith('.csv')) {
+                reader.readAsText(file);
+            } else {
+                reader.readAsArrayBuffer(file);
+            }
+        }
+
+        function parseCSV(data) {
+            Papa.parse(data, {
+                header: true,
+                skipEmptyLines: true,
+                dynamicTyping: false,
+                delimitersToGuess: [',', '\t', '|', ';'],
+                complete: function(results) {
+                    processData(results.data);
+                },
+                error: function(error) {
+                    showAlert('خطأ في تحليل ملف CSV: ' + error.message, 'error');
+                }
+            });
+        }
+
+        function parseExcel(data) {
+            const workbook = XLSX.read(data, { type: 'array', cellDates: true });
+            const sheetName = workbook.SheetNames[0];
+            const worksheet = workbook.Sheets[sheetName];
+            const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+            
+            if (jsonData.length < 2) {
+                showAlert('الملف فارغ أو لا يحتوي على بيانات كافية', 'error');
+                return;
+            }
+
+            const headers = jsonData[0];
+            const rows = jsonData.slice(1);
+            const dataObjects = rows.map(row => {
+                const obj = {};
+                headers.forEach((header, index) => {
+                    obj[header] = row[index] || '';
+                });
+                return obj;
+            });
+
+            processData(dataObjects);
+        }
+
+        function loadSampleData() {
+            const sampleData = [
+                {
+                    'اسم الموظف': 'ماهر عادل',
+                    'الفرع': 'الفرع الرئيسي',
+                    'وقت الحضور': 'يونيو 02، 05:30م',
+                    'وقت الانصراف': 'يونيو 03، 02:25ص',
+                    'مدة الوردية': '8:55'
+                },
+                {
+                    'اسم الموظف': 'أدهم',
+                    'الفرع': 'الفرع الثاني',
+                    'وقت الحضور': 'يونيو 02، 06:00م',
+                    'وقت الانصراف': 'يونيو 03، 03:15ص',
+                    'مدة الوردية': '9:15'
+                },
+                {
+                    'اسم الموظف': 'محمد صابر',
+                    'الفرع': 'الفرع الثالث',
+                    'وقت الحضور': 'يونيو 03، 02:00م',
+                    'وقت الانصراف': 'يونيو 03، 11:45م',
+                    'مدة الوردية': '9:45'
+                },
+                {
+                    'اسم الموظف': 'ماهر عادل',
+                    'الفرع': 'الفرع الرئيسي',
+                    'وقت الحضور': 'يونيو 04، 06:30م',
+                    'وقت الانصراف': 'يونيو 05، 02:25ص',
+                    'مدة الوردية': '7:55'
+                },
+                {
+                    'اسم الموظف': 'أحمد علي',
+                    'الفرع': 'الفرع الرابع',
+                    'وقت الحضور': 'يونيو 05، 09:00ص',
+                    'وقت الانصراف': 'يونيو 05، 07:30م',
+                    'مدة الوردية': '10:30'
+                }
+            ];
+            
+            showAlert('تم تحميل البيانات النموذجية بنجاح!', 'success');
+            processData(sampleData);
+        }
+
+        function processData(data) {
+            if (!data || data.length === 0) {
+                showAlert('لا توجد بيانات للمعالجة', 'error');
+                return;
+            }
+
+            rawData = data;
+            showAlert('تم تحميل ' + data.length + ' سجل بنجاح!', 'success');
+            
+            // Show settings section
+            document.getElementById('settingsSection').style.display = 'block';
+            
+            // Setup employee rates and vacation settings
+            setupEmployeeSettings();
+        }
+
+        function setupEmployeeSettings() {
+            const employees = [...new Set(rawData.map(row => row['المستخدم'] || row['اسم الموظف'] || row['Employee Name'] || ''))].filter(name => name);
+            
+            // Setup employee rates
+            const ratesContainer = document.getElementById('employeeRates');
+            ratesContainer.innerHTML = '';
+            
+            employees.forEach(employee => {
+                const rateItem = document.createElement('div');
+                rateItem.className = 'employee-rate-item';
+                const defaultRate = predefinedRates[employee] || 4.16;
+                rateItem.innerHTML = `
+                    <span>${employee}</span>
+                    <input type="number" id="rate_${employee.replace(/\s+/g, '_')}" value="${defaultRate}" step="0.01" min="0" style="width: 120px; text-align: center;">
+                `;
+                ratesContainer.appendChild(rateItem);
+            });
+
+            // Setup vacation settings
+            const vacationsContainer = document.getElementById('employeeVacations');
+            vacationsContainer.innerHTML = '';
+            
+            employees.forEach(employee => {
+                const vacationItem = document.createElement('div');
+                vacationItem.className = 'employee-vacation-item';
+                vacationItem.innerHTML = `
+                    <span>${employee}</span>
+                    <select id="vacation_${employee.replace(/\s+/g, '_')}">
+                        <option value="">لا يوجد إجازة</option>
+                        <option value="sunday">الأحد</option>
+                        <option value="monday">الاثنين</option>
+                        <option value="tuesday">الثلاثاء</option>
+                        <option value="wednesday">الأربعاء</option>
+                        <option value="thursday">الخميس</option>
+                        <option value="friday">الجمعة</option>
+                        <option value="saturday">السبت</option>
+                    </select>
+                `;
+                vacationsContainer.appendChild(vacationItem);
+            });
+        }
+
+        function parseArabicDateTime(dateTimeStr) {
+            if (!dateTimeStr) return null;
+            
+            try {
+                // Handle different Arabic date/time formats
+                const cleanStr = dateTimeStr.trim();
+                
+                // Updated pattern to match the actual file format: "يونيو 02، 02:29م"
+                const match = cleanStr.match(/(.+?)\s+(\d+)،\s*(\d+):(\d+)(ص|م)/);
+                if (match) {
+                    const [, monthName, day, hour, minute, period] = match;
+                    const monthNum = arabicMonths[monthName];
+                    if (monthNum !== undefined) {
+                        let hour24 = parseInt(hour);
+                        if (period === 'م' && hour24 !== 12) hour24 += 12;
+                        if (period === 'ص' && hour24 === 12) hour24 = 0;
+                        
+                        const date = new Date(2024, monthNum, parseInt(day), hour24, parseInt(minute));
+                        return date;
+                    }
+                }
+                
+                // Try parsing as regular date
+                const date = new Date(dateTimeStr);
+                return isNaN(date.getTime()) ? null : date;
+            } catch (error) {
+                console.error('Error parsing date:', dateTimeStr, error);
+                return null;
+            }
+        }
+
+        function parseDuration(durationStr) {
+            if (!durationStr) return 0;
+            
+            const parts = durationStr.split(':');
+            if (parts.length === 2) {
+                const hours = parseInt(parts[0]) || 0;
+                const minutes = parseInt(parts[1]) || 0;
+                return hours + (minutes / 60);
+            }
+            return 0;
+        }
+
+        function formatDuration(hours) {
+            const h = Math.floor(hours);
+            const m = Math.round((hours - h) * 60);
+            return `${h}:${m.toString().padStart(2, '0')}`;
+        }
+
+        function getDayType(date, employeeVacation) {
+    // تعويض فرق التوقيت لتوقيت السعودية
+    const saudiDate = new Date(Date.UTC(
+    date.getFullYear(), date.getMonth(), date.getDate(), 3, 0, 0
+));
+    const dayOfWeek = saudiDate.getDay();
+
+    const weekendThu = document.getElementById('weekendThu').checked;
+    const weekendFri = document.getElementById('weekendFri').checked;
+
+    // تحديد أرقام الأيام
+    const vacationDays = {
+        'sunday': 6, 'monday': 0, 'tuesday': 1, 'wednesday': 2,
+        'thursday': 3, 'friday': 4, 'saturday': 5
+    };
+
+    // تحقق من إجازة الموظف
+    if (employeeVacation && vacationDays[employeeVacation] === dayOfWeek) {
+        return 'vacation';
+    }
+
+    // تحقق من نهاية الأسبوع
+    if ((weekendThu && dayOfWeek === 4) || (weekendFri && dayOfWeek === 5)) {
+        return 'weekend';
+    }
+
+    return 'work';
+}
+
+
+
+        function getSaudiDay(date) {
+    const offsetDate = new Date(date.getTime() + (3 * 60 * 60 * 1000)); // تعويض +3 ساعات لتوقيت السعودية
+    return offsetDate.getDay();
+}
+
+
+
+        function calculateOvertime() {
+            showLoading(true);
+            
+            setTimeout(() => {
+                try {
+                    const regularHours = parseFloat(document.getElementById('regularHours').value) || 9;
+                    const overtimeMultiplier = parseFloat(document.getElementById('overtimeMultiplier').value) || 1.5;
+                    const vacationCalcType = document.querySelector('input[name="vacationCalc"]:checked').value;
+                    
+                    // Get employee settings
+                    const employees = [...new Set(rawData.map(row => row['المستخدم'] || row['اسم الموظف'] || row['Employee Name'] || ''))].filter(name => name);
+                    const employeeRates = {};
+                    const employeeVacations = {};
+                    
+                    employees.forEach(employee => {
+                        const rateId = `rate_${employee.replace(/\s+/g, '_')}`;
+                        const vacationId = `vacation_${employee.replace(/\s+/g, '_')}`;
+                        employeeRates[employee] = parseFloat(document.getElementById(rateId)?.value) || 4.16;
+                        employeeVacations[employee] = document.getElementById(vacationId)?.value || '';
+                    });
+
+                    // Process each record
+                    processedData = [];
+                    const employeeWorkDays = {};
+
+                    rawData.forEach(row => {
+                        const employeeName = row['المستخدم'] || row['اسم الموظف'] || row['Employee Name'] || '';
+                        if (!employeeName) return;
+
+                        const checkInTime = parseArabicDateTime(row['وقت تسجيل الحضور'] || row['وقت الحضور'] || row['Check In']);
+                        const checkOutTime = parseArabicDateTime(row['وقت تسجيل الإنصراف'] || row['وقت الانصراف'] || row['Check Out']);
+                        
+                        if (!checkInTime || !checkOutTime) return;
+
+                        // Handle multiple records for same employee on same day
+                        const dateKey = checkInTime.toDateString() + '_' + employeeName;
+                        if (employeeWorkDays[dateKey]) {
+                            // Use earliest check-in time
+                            if (checkInTime < employeeWorkDays[dateKey].checkInTime) {
+                                employeeWorkDays[dateKey].checkInTime = checkInTime;
+                            }
+                            return; // Skip duplicate entries
+                        }
+
+                        // Fixed end time: 2:15 AM next day
+                        const adjustedEndTime = new Date(checkInTime);
+                        adjustedEndTime.setDate(adjustedEndTime.getDate() + 1);
+                        adjustedEndTime.setHours(2, 15, 0, 0);
+
+                        const actualHours = (checkOutTime - checkInTime) / (1000 * 60 * 60);
+                        const adjustedHours = (adjustedEndTime - checkInTime) / (1000 * 60 * 60);
+
+                        const dayType = getDayType(checkInTime, employeeVacations[employeeName]);
+                        
+                        let overtimeHours = 0;
+                        if (dayType === 'vacation') {
+                            if (vacationCalcType === 'full') {
+                                overtimeHours = adjustedHours;
+                            } else {
+                                overtimeHours = Math.max(0, adjustedHours - regularHours);
+                            }
+                        }  else {
+                            overtimeHours = Math.max(0, adjustedHours - regularHours);
+                        }
+
+                        const hourlyRate = employeeRates[employeeName] || 4.16;
+                        const overtimeAmount = overtimeHours * hourlyRate * overtimeMultiplier;
+
+                        const record = {
+                            employeeName,
+                            dayName: arabicDays[getSaudiDay(checkInTime)],
+                            date: checkInTime,
+                            dateStr: checkInTime.toLocaleDateString('en-US'),
+                            dayType,
+                            checkInTime,
+                            originalCheckOutTime: checkOutTime,
+                            adjustedCheckOutTime: adjustedEndTime,
+                            actualHours,
+                            adjustedHours,
+                            overtimeHours,
+                            hourlyRate,
+                            overtimeAmount,
+                            branch: row['الفرع'] || row['Branch'] || ''
+                        };
+
+                        processedData.push(record);
+                        employeeWorkDays[dateKey] = record;
+                    });
+
+                    // Calculate employee summary
+                    calculateEmployeeSummary();
+                    
+                    // Display results
+                    displayResults();
+                    
+                    showAlert('تم حساب الساعات الإضافية بنجاح!', 'success');
+                    
+                } catch (error) {
+                    showAlert('خطأ في الحساب: ' + error.message, 'error');
+                } finally {
+                    showLoading(false);
+                }
+            }, 100);
+        }
+
+        function calculateEmployeeSummary() {
+            const summary = {};
+            
+            processedData.forEach(record => {
+                if (!summary[record.employeeName]) {
+                    summary[record.employeeName] = {
+                        name: record.employeeName,
+                        totalShifts: 0,
+                        regularShifts: 0,
+                        vacationShifts: 0,
+                        totalActualHours: 0,
+                        totalAdjustedHours: 0,
+                        totalOvertimeHours: 0,
+                        hourlyRate: record.hourlyRate,
+                        totalAmount: 0
+                    };
+                }
+                
+                const emp = summary[record.employeeName];
+                emp.totalShifts++;
+                emp.totalActualHours += record.actualHours;
+                emp.totalAdjustedHours += record.adjustedHours;
+                emp.totalOvertimeHours += record.overtimeHours;
+                emp.totalAmount += record.overtimeAmount;
+                
+                if (record.dayType === 'vacation') {
+                    emp.vacationShifts++;
+                } else {
+                    emp.regularShifts++;
+                }
+            });
+            
+            employeeSummary = Object.values(summary);
+        }
+
+        function displayResults() {
+            // Show results section
+            document.getElementById('resultsSection').style.display = 'block';
+            
+            // Display summary cards
+            displaySummaryCards();
+            
+            // Display tables
+            displayEmployeeSummaryTable();
+            displayDailyDetailsTable();
+            
+            // Initialize filters
+            filteredData = [...processedData];
+            updateResultsCount();
+        }
+
+        function displaySummaryCards() {
+            const totalEmployees = employeeSummary.length;
+            const totalOvertimeHours = employeeSummary.reduce((sum, emp) => sum + emp.totalOvertimeHours, 0);
+            const totalAmount = employeeSummary.reduce((sum, emp) => sum + emp.totalAmount, 0);
+            const currency = document.getElementById('currency').value;
+            
+            const summaryCards = document.getElementById('summaryCards');
+            summaryCards.innerHTML = `
+                <div class="summary-card">
+                    <h4>إجمالي الموظفين</h4>
+                    <div class="value">${totalEmployees}</div>
+                </div>
+                <div class="summary-card">
+                    <h4>إجمالي الساعات الإضافية</h4>
+                    <div class="value">${formatDuration(totalOvertimeHours)}</div>
+                </div>
+                <div class="summary-card">
+                    <h4>إجمالي المبلغ المستحق</h4>
+                    <div class="value">${totalAmount.toFixed(2)} ${currency}</div>
+                </div>
+            `;
+        }
+
+        function displayEmployeeSummaryTable() {
+            const tbody = document.querySelector('#employeeSummaryTable tbody');
+            const currency = document.getElementById('currency').value;
+            
+            tbody.innerHTML = employeeSummary.map(emp => `
+                <tr>
+                    <td>${emp.name}</td>
+                    <td>${emp.totalShifts}</td>
+                    <td>${emp.regularShifts}</td>
+                    <td>${emp.vacationShifts}</td>
+                    <td>${formatDuration(emp.totalActualHours)}</td>
+                    <td>${formatDuration(emp.totalAdjustedHours)}</td>
+                    <td>${formatDuration(emp.totalOvertimeHours)}</td>
+                    <td>${emp.hourlyRate.toFixed(2)} ${currency}</td>
+                    <td>${emp.totalAmount.toFixed(2)} ${currency}</td>
+                </tr>
+            `).join('');
+        }
+
+        function displayDailyDetailsTable() {
+            filteredData = [...processedData];
+            updateDailyDetailsTable();
+        }
+
+        function updateDailyDetailsTable() {
+            const tbody = document.querySelector('#dailyDetailsTable tbody');
+            const currency = document.getElementById('currency').value;
+            
+            tbody.innerHTML = filteredData.map(record => {
+                const dayTypeClass = `day-type-${record.dayType}`;
+                const adjustedClass = record.adjustedHours !== record.actualHours ? 'adjusted-time' : '';
+                
+                return `
+                    <tr class="${dayTypeClass}">
+                        <td>${record.employeeName}</td>
+                        <td>${record.dayName}</td>
+                        <td>${record.dateStr}</td>
+                        <td>${getDayTypeLabel(record.dayType)}</td>
+                        <td>${record.checkInTime.toLocaleTimeString('en-US', {hour: '2-digit', minute: '2-digit'})}</td>
+                        <td>${record.originalCheckOutTime.toLocaleTimeString('en-US', {hour: '2-digit', minute: '2-digit'})}</td>
+                        <td class="${adjustedClass}">${record.adjustedCheckOutTime.toLocaleTimeString('en-US', {hour: '2-digit', minute: '2-digit'})}</td>
+                        <td>${formatDuration(record.actualHours)}</td>
+                        <td class="${adjustedClass}">${formatDuration(record.adjustedHours)}</td>
+                        <td>${formatDuration(record.overtimeHours)}</td>
+                        <td>${record.overtimeAmount.toFixed(2)} ${currency}</td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function getDayTypeLabel(dayType) {
+            const labels = {
+                'work': 'يوم عمل',
+                'weekend': 'نهاية أسبوع',
+                'vacation': 'إجازة شخصية'
+            };
+            return labels[dayType] || dayType;
+        }
+
+        function applyFilters() {
+            const searchEmployee = document.getElementById('searchEmployee').value.toLowerCase();
+            const filterDayType = document.getElementById('filterDayType').value;
+            const dateFrom = document.getElementById('dateFrom').value;
+            const dateTo = document.getElementById('dateTo').value;
+            
+            filteredData = processedData.filter(record => {
+                // Employee name filter
+                if (searchEmployee && !record.employeeName.toLowerCase().includes(searchEmployee)) {
+                    return false;
+                }
+                
+                // Day type filter
+                if (filterDayType && record.dayType !== filterDayType) {
+                    return false;
+                }
+                
+                // Date range filter
+                if (dateFrom) {
+                    const fromDate = new Date(dateFrom);
+                    if (record.date < fromDate) return false;
+                }
+                
+                if (dateTo) {
+                    const toDate = new Date(dateTo);
+                    toDate.setHours(23, 59, 59, 999);
+                    if (record.date > toDate) return false;
+                }
+                
+                return true;
+            });
+            
+            updateDailyDetailsTable();
+            updateResultsCount();
+        }
+
+        function clearFilters() {
+            document.getElementById('searchEmployee').value = '';
+            document.getElementById('filterDayType').value = '';
+            document.getElementById('dateFrom').value = '';
+            document.getElementById('dateTo').value = '';
+            
+            filteredData = [...processedData];
+            updateDailyDetailsTable();
+            updateResultsCount();
+        }
+
+        function updateResultsCount() {
+            const count = filteredData.length;
+            const total = processedData.length;
+            document.getElementById('resultsCount').textContent = `عرض ${count} من ${total} سجل`;
+        }
+
+        function sortTable(tableId, columnIndex) {
+            const table = document.getElementById(tableId);
+            const tbody = table.querySelector('tbody');
+            const rows = Array.from(tbody.querySelectorAll('tr'));
+            
+            const sortKey = `${tableId}_${columnIndex}`;
+            const isAscending = sortDirection[sortKey] !== true;
+            sortDirection[sortKey] = isAscending;
+            
+            rows.sort((a, b) => {
+                const aText = a.cells[columnIndex].textContent.trim();
+                const bText = b.cells[columnIndex].textContent.trim();
+                
+                // Try to parse as numbers first
+                const aNum = parseFloat(aText.replace(/[^\d.-]/g, ''));
+                const bNum = parseFloat(bText.replace(/[^\d.-]/g, ''));
+                
+                if (!isNaN(aNum) && !isNaN(bNum)) {
+                    return isAscending ? aNum - bNum : bNum - aNum;
+                }
+                
+                // String comparison
+                return isAscending ? aText.localeCompare(bText, 'ar') : bText.localeCompare(aText, 'ar');
+            });
+            
+            // Clear and repopulate tbody
+            tbody.innerHTML = '';
+            rows.forEach(row => tbody.appendChild(row));
+            
+            // Update header indicators
+            const headers = table.querySelectorAll('th');
+            headers.forEach((header, index) => {
+                if (index === columnIndex) {
+                    header.textContent = header.textContent.replace(/[↑↓↕️]/g, '') + (isAscending ? ' ↑' : ' ↓');
+                } else {
+                    header.textContent = header.textContent.replace(/[↑↓]/g, '') + ' ↕️';
+                }
+            });
+        }
+
+        function exportToExcel(type) {
+            let data, filename;
+            
+            if (type === 'summary') {
+                data = employeeSummary.map(emp => ({
+                    'اسم الموظف': emp.name,
+                    'عدد الورديات': emp.totalShifts,
+                    'ورديات عادية': emp.regularShifts,
+                    'ورديات إجازة': emp.vacationShifts,
+                    'إجمالي الساعات الفعلية': formatDuration(emp.totalActualHours),
+                    'إجمالي الساعات المعدلة': formatDuration(emp.totalAdjustedHours),
+                    'إجمالي الساعات الإضافية': formatDuration(emp.totalOvertimeHours),
+                    'سعر الساعة': emp.hourlyRate.toFixed(2),
+                    'إجمالي المبلغ': emp.totalAmount.toFixed(2)
+                }));
+                filename = 'ملخص_الموظفين.xlsx';
+            } else if (type === 'details') {
+                data = processedData.map(record => ({
+                    'اسم الموظف': record.employeeName,
+                    'اسم اليوم': record.dayName,
+                    'التاريخ': record.dateStr,
+                    'نوع اليوم': getDayTypeLabel(record.dayType),
+                    'وقت الحضور': record.checkInTime.toLocaleTimeString('en-US'),
+                    'وقت الانصراف الأصلي': record.originalCheckOutTime.toLocaleTimeString('en-US'),
+                    'وقت الانصراف المعدل': record.adjustedCheckOutTime.toLocaleTimeString('en-US'),
+                    'الساعات الفعلية': formatDuration(record.actualHours),
+                    'الساعات المعدلة': formatDuration(record.adjustedHours),
+                    'الساعات الإضافية': formatDuration(record.overtimeHours),
+                    'مبلغ الساعات الإضافية': record.overtimeAmount.toFixed(2)
+                }));
+                filename = 'التفاصيل_اليومية.xlsx';
+            } else if (type === 'filtered') {
+                data = filteredData.map(record => ({
+                    'اسم الموظف': record.employeeName,
+                    'اسم اليوم': record.dayName,
+                    'التاريخ': record.dateStr,
+                    'نوع اليوم': getDayTypeLabel(record.dayType),
+                    'وقت الحضور': record.checkInTime.toLocaleTimeString('en-US'),
+                    'وقت الانصراف الأصلي': record.originalCheckOutTime.toLocaleTimeString('en-US'),
+                    'وقت الانصراف المعدل': record.adjustedCheckOutTime.toLocaleTimeString('en-US'),
+                    'الساعات الفعلية': formatDuration(record.actualHours),
+                    'الساعات المعدلة': formatDuration(record.adjustedHours),
+                    'الساعات الإضافية': formatDuration(record.overtimeHours),
+                    'مبلغ الساعات الإضافية': record.overtimeAmount.toFixed(2)
+                }));
+                filename = 'البيانات_المفلترة.xlsx';
+            }
+            
+            const ws = XLSX.utils.json_to_sheet(data);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, 'البيانات');
+            XLSX.writeFile(wb, filename);
+            
+            showAlert('تم تصدير الملف بنجاح!', 'success');
+        }
+
+        function exportToCSV() {
+            const data = filteredData.map(record => ({
+                'Employee Name': record.employeeName,
+                'Day Name': record.dayName,
+                'Date': record.dateStr,
+                'Day Type': getDayTypeLabel(record.dayType),
+                'Check In': record.checkInTime.toLocaleTimeString('en-US'),
+                'Original Check Out': record.originalCheckOutTime.toLocaleTimeString('en-US'),
+                'Adjusted Check Out': record.adjustedCheckOutTime.toLocaleTimeString('en-US'),
+                'Actual Hours': formatDuration(record.actualHours),
+                'Adjusted Hours': formatDuration(record.adjustedHours),
+                'Overtime Hours': formatDuration(record.overtimeHours),
+                'Overtime Amount': record.overtimeAmount.toFixed(2)
+            }));
+            
+            const csv = Papa.unparse(data);
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = 'overtime_report.csv';
+            link.click();
+            
+            showAlert('تم تصدير ملف CSV بنجاح!', 'success');
+        }
+
+        function printReport() {
+            window.print();
+        }
+
+        function showLoading(show) {
+            document.getElementById('loading').classList.toggle('show', show);
+        }
+
+        function showAlert(message, type) {
+            // Remove existing alerts
+            const existingAlerts = document.querySelectorAll('.alert');
+            existingAlerts.forEach(alert => alert.remove());
+            
+            const alert = document.createElement('div');
+            alert.className = `alert alert-${type}`;
+            alert.textContent = message;
+            
+            document.querySelector('.container').insertBefore(alert, document.querySelector('.card'));
+            
+            setTimeout(() => {
+                alert.remove();
+            }, 5000);
+        }
+
+        // Event listeners for filters
+        document.getElementById('searchEmployee').addEventListener('input', applyFilters);
+        document.getElementById('filterDayType').addEventListener('change', applyFilters);
+        document.getElementById('dateFrom').addEventListener('change', applyFilters);
+        document.getElementById('dateTo').addEventListener('change', applyFilters);
+    </script>
+</body>
+</html>
